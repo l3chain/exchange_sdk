@@ -1,4 +1,4 @@
-import { ChainName } from '@l3/sdk'
+import { ChainName } from '@l3chain/sdk'
 
 export type ExchangeTokenID = {
     chainIdentifier: string,

@@ -17,6 +17,7 @@
     "timeout": "50000"
   },
   "dependencies": {
+    "@l3chain/sdk": "github:l3chain/sdk",
     "web3": "^1.8.2"
   },
   "devDependencies": {

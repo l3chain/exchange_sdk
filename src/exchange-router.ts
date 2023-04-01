@@ -4,16 +4,15 @@ import BN from 'bn.js';
 import { toNumber, fromWei, toBN } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 import { provider } from 'web3-core';
-import { ChainIdentifier, ChainIdentifiers, ChainName, ChainNameFromIdentifier, ChainNames, GraphQlClient } from '@l3/sdk';
+import { L3Chain, ChainIdentifier, ChainIdentifiers, ChainName, ChainNameFromIdentifier, ChainNames, GraphQlClient } from '@l3chain/sdk';
 import { ExchangePair } from './exchange-pair';
 import { ExchangePairMetadata, ExchangeHistory, CertificateState, NullableAddress } from "./entity";
+import { ABI } from './abi';
 
-const IExchangePairABI = require('@l3exchange/contracts/build/contracts/IExchangePair.json').abi;
-const IExchangeRouterABI = require('@l3exchange/contracts/build/contracts/IExchangeRouter.json').abi;
-const IExchangeFactoryABI = require('@l3exchange/contracts/build/contracts/IExchangeFactory.json').abi;
 
 export class ExchangeRouter {
     metaDatas: ExchangePairMetadata[];
+    protected _l3chain: L3Chain;
     protected _web3s: { [key in ChainName]?: Web3 } = {}
     protected _clients: { [key in ChainName]?: GraphQlClient } = {}
     protected _contracts: {
@@ -24,8 +23,13 @@ export class ExchangeRouter {
             router: {}
         }
 
+    get contractAddress() {
+        return this._contracts.router
+    }
+
     constructor(props: {
         generatedDatas: ExchangePairMetadata[],
+        l3chain: L3Chain,
         graphQL: { [key in ChainName]: string },
         providers: { [key in ChainName]: provider },
         addresses: {
@@ -33,13 +37,14 @@ export class ExchangeRouter {
             router: { [key in ChainName]: string },
         }
     }) {
-        const { generatedDatas, graphQL, providers, addresses } = props;
+        const { generatedDatas, graphQL, providers, addresses, l3chain } = props;
         this.metaDatas = generatedDatas;
+        this._l3chain = l3chain;
         for (let name of ChainNames) {
             this._clients[name] = new GraphQlClient(graphQL[name as ChainName]);
             this._web3s[name] = new Web3(providers[name as ChainName]);
-            this._contracts.factory[name] = new this._web3s[name]!.eth.Contract(IExchangeFactoryABI, addresses.factory[name])
-            this._contracts.router[name] = new this._web3s[name]!.eth.Contract(IExchangeRouterABI, addresses.router[name])
+            this._contracts.factory[name] = new this._web3s[name]!.eth.Contract(ABI.Factory, addresses.factory[name])
+            this._contracts.router[name] = new this._web3s[name]!.eth.Contract(ABI.Router, addresses.router[name])
         }
     }
 
@@ -134,6 +139,7 @@ export class ExchangeRouter {
                 ${!filter.orderDirection ? "orderDirection:desc" : `orderDirection: ${filter.orderDirection}`}
                 ${!filter.orderBy ? "orderBy:time" : `orderBy: ${filter.orderBy}`}
             ) {
+                id
                 certificateId
                 fromAccount
                 toAccount
@@ -155,6 +161,7 @@ export class ExchangeRouter {
         `
         let exchangeds = await this._clients[fromChain]?.query<{
             exchangeds: {
+                id: string,
                 certificateId: string,
                 fromAccount: string,
                 toAccount: string,
@@ -173,11 +180,6 @@ export class ExchangeRouter {
                 assetProvider: string
             }[]
         }>(gql).then(data => {
-
-            if (!data) {
-                console.log(gql)
-            }
-
             return data.exchangeds;
         });
 
@@ -203,6 +205,7 @@ export class ExchangeRouter {
                 : "Withdraw"
 
             return {
+                id: record.id,
                 emitChainIdentifier: emitChainIdentifier,
                 emitPair: emitPair,
                 certificateId: toNumber(record.certificateId),
@@ -339,17 +342,68 @@ export class ExchangeRouter {
     }
 
     /**
-     * 查询超过10分钟还未完成处理的交易
+     * 查询超过5-60分钟还未完成处理的交易
+     * 
+     * 前5分钟先由节点默认程序处理，若无法处理，开始开放给做市商处理，超过60分钟还未被处理，节点将作为欠款处理
      * 
      * @param pair 
      */
-    // selectBadExchange = (pair: ExchangePair) => {
-    //     // 获取所有可以兑换到对应Pair的其他网络中的Pair
-    //     let fromEtids = pair.fromExchangeTokenIds;
+    selectBadExchange = async (pair: ExchangePair) => {
+        // 获取所有可以兑换到对应Pair的其他网络中的Pair
+        let fromEtids = pair.fromExchangeTokenIds;
+        // 获取所有网络中目标网络为当前Piar所在网络的交易记录
+        let allHistory = await Promise.all(
+            fromEtids.map(
+                fromEtid => this.selectExchangeHistory(
+                    ChainNameFromIdentifier(fromEtid.chainIdentifier) as ChainName,
+                    {
+                        first: 100,
+                        orderBy: "time",
+                        orderDirection: "asc",
+                        where: {
+                            fromETID_: {
+                                chainIdentifier: fromEtid.chainIdentifier
+                            },
+                            toETID_: {
+                                chainIdentifier: pair.metaData.etid.chainIdentifier,
+                                shadowEmiter: pair.metaData.etid.shadowEmiter
+                            },
+                            // time_gte: Math.round(new Date().getTime() / 1000) - 30 * 65,
+                            // time_lt: Math.round(new Date().getTime() / 1000) - 30 * 5
+                        }
+                    }
+                ).then((history) => {
+                    return this.selectExchangeHistory(
+                        ChainNameFromIdentifier(pair.metaData.etid.chainIdentifier) as ChainName,
+                        {
+                            first: history.length,
+                            where: {
+                                fromETID_: {
+                                    chainIdentifier: fromEtid.chainIdentifier,
+                                    shadowEmiter: fromEtid.shadowEmiter
+                                },
+                                certificateId_in: history.map(v => v.certificateId)
+                            }
+                        }
+                    ).then(doneHistory => {
+                        let doneCertIds = doneHistory.map(v => v.certificateId);
+                        return history.filter(record => !doneCertIds.includes(record.certificateId))
+                    })
+                })
+            )
+        )
+        return allHistory.flat()
+    }
 
-    //     // 查询所有的交换记录
-    //     for (let fromEtid of fromEtids) {
-
-    //     }
-    // }
+    /**
+     * 获取存入类型历史记录的凭证信息，返回的信息可以用于其他成员网络的验证，返回的对象可以用于在目标网络进行提取操作
+     * 
+     * @param history 
+     * @returns 
+     */
+    getDepositedProof = (history: ExchangeHistory) => this._l3chain.createL3TransactionProof(
+        ChainNameFromIdentifier(history.from.chainIdentifier) as ChainName,
+        history.id.split('-')[0],
+        parseInt(history.id.split('-')[1] as string) - 1
+    );
 }

@@ -9,6 +9,7 @@ export type CertificateState = "Unused" | "ExchangedDone" | "BadHandlerDone" | "
  * emitChainIdentifier和emitPair标记了这个产生的交换记录来自于哪个网络的哪一个交易对，结合from和to可以判断出交易方向
  */
 export type ExchangeHistory = {
+    id: string,
     emitChainIdentifier: string,
     emitPair: string,
     certificateId: number,

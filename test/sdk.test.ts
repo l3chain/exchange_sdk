@@ -1,7 +1,8 @@
 import Mocha from "mocha";
 import { expect } from 'chai'
-import { ExchangePairsGenerater, ExchangeRouter } from "../src"
-import web3 from 'web3';
+import { ABI, ExchangePairsGenerater, ExchangeRouter } from "../src"
+import Web3 from 'web3';
+import { L3Chain } from "@l3chain/sdk";
 
 describe("L3Exchange", function () {
 
@@ -12,9 +13,9 @@ describe("L3Exchange", function () {
             BSC: 'http://l3test.org:8000/subgraphs/name/l3/exchange_bsc'
         },
         providers: {
-            HOST: new web3.providers.HttpProvider('http://l3test.org:18545'),
-            ETH: new web3.providers.HttpProvider('http://l3test.org:28545'),
-            BSC: new web3.providers.HttpProvider('http://l3test.org:38545'),
+            HOST: new Web3.providers.HttpProvider('http://l3test.org:18545'),
+            ETH: new Web3.providers.HttpProvider('http://l3test.org:28545'),
+            BSC: new Web3.providers.HttpProvider('http://l3test.org:38545'),
         },
         addresses: {
             factory: {
@@ -30,12 +31,29 @@ describe("L3Exchange", function () {
         }
     }
 
+    let l3 = new L3Chain({
+        HOST: {
+            web3Provider: config.providers.HOST,
+            contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e",
+            graphDataBaseHost: "http://l3test.org:8000/subgraphs/name/l3chain/host_database",
+        },
+        ETH: {
+            web3Provider: config.providers.ETH,
+            contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e"
+        },
+        BSC: {
+            web3Provider: config.providers.BSC,
+            contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e"
+        },
+    })
+
     let exchangePairs;
     let router: ExchangeRouter;
     before(async () => {
         exchangePairs = await ExchangePairsGenerater(config)
         router = new ExchangeRouter({
             ...config,
+            l3chain: l3,
             generatedDatas: exchangePairs,
         });
     })
@@ -46,6 +64,7 @@ describe("L3Exchange", function () {
      */
     it("support exchagne pairs in chain", async () => {
         let supportPairs = router.supportExchangePairs('HOST');
+        console.log(supportPairs);
         expect(supportPairs.length).to.be.gt(0);
     })
 
@@ -72,6 +91,7 @@ describe("L3Exchange", function () {
             '0x5Cc22ED76e7A88eCcCD1eaD22843e426A16384b3',
             1e12
         );
+
         // 附加手续费，如果触发了阈值，则为收取的数量，否则为0
         // fees.feeAdditionalAmount
 
@@ -170,5 +190,14 @@ describe("L3Exchange", function () {
                 borrower: "0x5Cc22ED76e7A88eCcCD1eaD22843e426A16384b3"
             }
         })
+    })
+
+    /**
+     * 获取存入交易凭证
+     */
+    it("getDepositedProof", async () => {
+        let supportPairs = router.supportExchangePairs('BSC');
+        let badTransactions = await router.selectBadExchange(supportPairs[0]);
+        await router.getDepositedProof(badTransactions[0]).then(console.log)
     })
 });

@@ -1,7 +1,8 @@
 {
     "extends": "./config/tsconfig.base.json",
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "abi/**/*",
     ],
     "exclude": [
         "node_modules",

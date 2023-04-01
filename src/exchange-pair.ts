@@ -4,8 +4,7 @@ import BN from 'bn.js';
 import { toNumber } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 import { ExchangePairMetadata, ExchangeTokenID } from "./entity";
-
-const IExchangePairABI = require('@l3exchange/contracts/build/contracts/IExchangePair.json');
+import { ABI } from './abi';
 
 export class ExchangePair {
     protected _metaData: ExchangePairMetadata;
@@ -24,7 +23,7 @@ export class ExchangePair {
 
     constructor(web3: Web3, metaData: ExchangePairMetadata) {
         this._metaData = metaData;
-        this._contract = new web3.eth.Contract(IExchangePairABI.abi, this._metaData.pairContract);
+        this._contract = new web3.eth.Contract(ABI.Pair, this._metaData.pairContract);
     }
 
 
@@ -72,7 +71,6 @@ export class ExchangePair {
         this.contract.methods.acceptExchangeTokenIds()
             .call()
             .then((datas: any) => {
-                console.log(datas)
                 resolve(datas.map((data: any) => {
                     return {
                         chainIdentifier: data.chainIdentifier,

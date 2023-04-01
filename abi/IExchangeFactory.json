@@ -1,0 +1,284 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "chainIdentifier",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "tokenContract",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "tokenName",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "tokenSymbol",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "tokenDecimals",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "pairContract",
+        "type": "address"
+      }
+    ],
+    "name": "CreatedExchangePair",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "WCOIN",
+    "outputs": [
+      {
+        "internalType": "contract WrappedCoin",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "l3",
+    "outputs": [
+      {
+        "internalType": "contract IChain",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "fee",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "feeTo",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "rewardFrom",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct Fee",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "pairOf",
+    "outputs": [
+      {
+        "internalType": "contract IExchangePair",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      }
+    ],
+    "name": "feeAdditionalOf",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "thresholdAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint40",
+            "name": "rate",
+            "type": "uint40"
+          },
+          {
+            "internalType": "address",
+            "name": "feeTo",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct FeeAdditional",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenContractAddress",
+        "type": "address"
+      }
+    ],
+    "name": "createExchangePair",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "feeTo",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "rewardFrom",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct Fee",
+        "name": "feeConfig",
+        "type": "tuple"
+      }
+    ],
+    "name": "setFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "thresholdAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint40",
+            "name": "rate",
+            "type": "uint40"
+          },
+          {
+            "internalType": "address",
+            "name": "feeTo",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct FeeAdditional",
+        "name": "feeAdditional",
+        "type": "tuple"
+      }
+    ],
+    "name": "setFeeAdditional",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "targetToken",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "chainIdentifier",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "shadowEmiter",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenContract",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "name": "decimals",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct ExchangeTokenId",
+        "name": "etid",
+        "type": "tuple"
+      }
+    ],
+    "name": "addAcceptExchangeTokenId",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

@@ -1,4 +1,4 @@
-import { ChainName, ChainNames, GraphQlClient, ChainIdentifier, ChainIdentifiers, ChainNameFromIdentifier } from "@l3/sdk";
+import { ChainName, ChainNames, GraphQlClient, ChainIdentifier, ChainIdentifiers, ChainNameFromIdentifier } from "@l3chain/sdk";
 
 import Web3 from "web3";
 import { provider } from 'web3-core';
