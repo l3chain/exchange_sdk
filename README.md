@@ -4,7 +4,62 @@
 
 《L3Exchange》项目是基于L3Chain作为共识基础，用于验证L3Chain的功能，提供的主要功能是基于L3Chain证明，来证明任何地址在对应的Pair处存入了资产，在其他网络中证明其确实存入了资产，来实现跨网络交换资产的功能。
 
+在使用时需要额外注意同时查询的是多个网络中的数据，大部分返回的数据中都有chainIdentifier作为网络标记，用来区分这个数据的来源是哪里，SDK中为了方便使用，接口大部分使用的是ChainName这个结构
+```typescript
+export ChainName = "HOST" | "BSC" | "ETH"
+```
+
+为了方便ChainIdentifier和ChainName之间的转换你可以使用
+
+```typescript
+import { 
+    ChainIdentifiers, 
+    ChainName, 
+    ChainNameFromIdentifier, 
+    ChainNames 
+} from '@l3chain/sdk';
+
+// 所有当前支持的网络名称
+console.log(ChainNames);
+for (let chianName of ChainNames) {
+    ...
+}
+
+// ChainName To ChainIdentifier
+ChainIdentifiers.HOST,
+ChainIdentifiers.BSC,
+ChainIdentifiers.ETH
+// 更推荐下面的写法，因为网络可能会增加
+ChainIdentifiers["HOST"]
+ChainIdentifiers["BSC"]
+ChainIdentifiers["ETH"]
+
+// ChainIdentifier To ChainName
+ChainNameFromIdentifier("[identifier]")
+
+```
+
 SDK只提供读相关的功能,实际交易可以从导出的ABI自行构建合约对象进行实际交易的发送。
+
+比如使用web3作为交互模块，需要发送交易,可能会有类似如下的代码
+
+```typescript
+
+import Web3 from 'web3';
+import { ABI } from "@l3exchange/sdk";
+
+const web3 = new Web3(window.ethereum);
+
+// ERC20标准ABI
+const token = new web3.eth.Contract(ABI.ERC20, "${Address}");
+
+// ExchangeFactory
+const factory = new web3.eth.Contract(ABI.Factory, "${Address}");
+
+// 调用ExchangeFactory的合约接口
+factory.methods.pairOf(token._address).then(console.log);
+
+```
 
 
 ## Install
@@ -69,13 +124,13 @@ export type ExchangeTokenID = {
 }
 ```
 
-在构建完Router以后，可以在Router中查询支持交换的Pair的基本信息,接口会返回一个或多个[ExchangePair](https://github.com/l3chain/exchange_sdk/src/exchange-pair.ts)对象.
+在构建完Router以后，可以在Router中查询支持交换的Pair的基本信息,接口会返回一个或多个[ExchangePair](https://github.com/l3chain/exchange_sdk/blob/master/src/exchange-pair.ts)对象.
 
 ```typescript
 let supportPairs = await router.supportExchangePairs('HOST');
 ```
 
-ExchangePair的MetaData中记录了一些基本信息可以用于判断和展示页面, 特别是toEtid这个成员，代表你选择的Pair可以交换到的目标网络和目标资产信息,这个数据会通过[ExchangePair.toExchangeTokenIds()](https://github.com/l3chain/exchange_sdk/src/exchange-pair.ts#L30)返回
+ExchangePair的MetaData中记录了一些基本信息可以用于判断和展示页面, 特别是toEtid这个成员，代表你选择的Pair可以交换到的目标网络和目标资产信息,这个数据会通过[ExchangePair.toExchangeTokenIds()](https://github.com/l3chain/exchange_sdk/blob/master/src/exchange-pair.ts#L30)返回
 
 ```typescript
 export interface ExchangePairMetadata {
@@ -107,4 +162,9 @@ let fees = await pair.exchangeToEstimateFee(
 );
 ```
 
-更多例子见[测试用例](https://github.com/l3chain/exchange_sdk/test)
+### 一个综合的例子
+
+SDK只提供了读和查询功能，在实际的合约交互时，需要用户自行构建交易对象，这里有一个使用web3js的通讯例子[Example](https://github.com/l3chain/exchange_sdk/blob/master/example)
+
+
+```

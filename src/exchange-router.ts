@@ -15,6 +15,10 @@ export class ExchangeRouter {
     protected _l3chain: L3Chain;
     protected _web3s: { [key in ChainName]?: Web3 } = {}
     protected _clients: { [key in ChainName]?: GraphQlClient } = {}
+    protected _addresses: {
+        factory: { [key in ChainName]: string },
+        router: { [key in ChainName]: string },
+    };
     protected _contracts: {
         factory: { [key in ChainName]?: Contract },
         router: { [key in ChainName]?: Contract },
@@ -24,7 +28,7 @@ export class ExchangeRouter {
         }
 
     get contractAddress() {
-        return this._contracts.router
+        return this._addresses.router;
     }
 
     constructor(props: {
@@ -39,6 +43,7 @@ export class ExchangeRouter {
     }) {
         const { generatedDatas, graphQL, providers, addresses, l3chain } = props;
         this.metaDatas = generatedDatas;
+        this._addresses = addresses;
         this._l3chain = l3chain;
         for (let name of ChainNames) {
             this._clients[name] = new GraphQlClient(graphQL[name as ChainName]);
@@ -278,15 +283,15 @@ export class ExchangeRouter {
                 }
             ).then(rsp => rsp.length > 0 ? rsp[0] : undefined)
 
+            if (!withdrawHistory) {
+                return "Unused";
+            }
+
             if (withdrawHistory?.historyType != "Withdraw") {
                 throw new Error("select target withdraw exechange history has something wrong.");
             }
 
-            if (!withdrawHistory) {
-                return "Unused";
-            } else {
-                return await this.getExchangeHistoryState(withdrawHistory);
-            }
+            return await this.getExchangeHistoryState(withdrawHistory);
         }
     }
 

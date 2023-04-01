@@ -58,7 +58,7 @@ export class ExchangePair {
     ): Promise<{
         feeAmount: string | number | BN,
         feeAdditionalAmount: string | number | BN,
-        feeL3: string | number | BN,
+        feel3: string | number | BN,
     }> => this.contract.methods.exchangeToEstimateFee(
         etid,
         fromAccount,

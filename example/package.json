@@ -1,0 +1,34 @@
+{
+  "name": "@l3exchange/sdk",
+  "version": "0.0.1",
+  "main": "./dist/index.js",
+  "types": "./types/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "start": "tsc -b tsconfig.json && node ./",
+    "build": "tsc -b tsconfig.json",
+    "test": "cross-env TS_NODE_PROJECT='test/tsconfig.test.json' mocha test/**/**.test.ts"
+  },
+  "mocha": {
+    "require": [
+      "ts-node/register",
+      "tsconfig-paths/register"
+    ],
+    "ui": "bdd",
+    "timeout": "50000"
+  },
+  "dependencies": {
+    "@l3exchange/sdk": "file:../"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.19",
+    "@types/mocha": "^8.2.2",
+    "@types/node": "^18.0.1",
+    "chai": "^4.3.4",
+    "cross-env": "^7.0.3",
+    "mocha": "^9.0.1",
+    "ts-node": "^10.0.0",
+    "tsconfig-paths": "^4.1.2",
+    "typescript": "^4.7.4"
+  }
+}
