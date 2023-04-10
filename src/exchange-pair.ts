@@ -67,7 +67,6 @@ export class ExchangePair {
     ).call();
 
     acceptExchangeTokenID = () => new Promise<ExchangeTokenID[]>((resolve, reject) => {
-        console.log(this.contract.methods)
         this.contract.methods.acceptExchangeTokenIds()
             .call()
             .then((datas: any) => {
