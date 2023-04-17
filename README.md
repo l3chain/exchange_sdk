@@ -167,4 +167,54 @@ let fees = await pair.exchangeToEstimateFee(
 SDK只提供了读和查询功能，在实际的合约交互时，需要用户自行构建交易对象，这里有一个使用web3js的通讯例子[Example](https://github.com/l3chain/exchange_sdk/blob/master/example)
 
 
+### 手续费相关描述
+
+跨链桥在使用时，有可能需要支付的所有费用如下
+
+#### 1.跨链桥基本手续费
+
+```typescript
+//每次使用跨链桥的代币交换时按照每笔交易收取，收取的币种为链上主币（ETH，BNB）
+
+let fee = await router.fee("HOST" | "BSC" | ...)
+
+fee.amount
+```
+
+#### 2.跨链桥附加手续费
+
+```typescript
+// 在交换某个币种时，若一次性交换的数量大于设定的阈值T，则需要加收当比交易一个百分比
+
+let exchangeAmount = toBN(toWei('1000'));
+
+let feeAdditional = await router.feeAdditionalOf(pair)
+
+let fee2 = exchangeAmount.gt(feeAdditional.thresholdAmount) 
+    ? exchangeAmount.mul(feeAdditional.rateWei).div(toBN(1e12))
+    : toBN(0)
+
+```
+
+#### 3.验证费用
+
+可以使用下面接口一次获得所有手续费参数
+
+```typescript
+// 跨链桥的下层还有一个三层网络，此费用是三层网络需要支付，由于是一个动态数值，所以提供了一个方法在最终构成交易后才可以计算出准确数值,这个方法也可以用于一次性获取三个类型的手续费
+// 获取手续费信息
+let fees = await usePair.exchangeToEstimateFee(
+    targetEtid,
+    accounts[0],
+    accounts[8],
+    injectionWeb3.utils.toWei('1')
+);
+console.log(fees);
+
+// Returns
+Result {
+    feeAmount: '1000000000000000000', // 基础手续费
+    feeAdditionalAmount: '0', // 附加手续费（如果有）
+    feel3: '0' // 验证费
+}
 ```
