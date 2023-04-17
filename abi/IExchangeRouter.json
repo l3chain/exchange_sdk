@@ -171,5 +171,72 @@
     "outputs": [],
     "stateMutability": "payable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "chainIdentifier",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "shadowEmiter",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenContract",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "name": "decimals",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct ExchangeTokenId",
+        "name": "coinETID",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "chainIdentifier",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "shadowEmiter",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenContract",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "name": "decimals",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct ExchangeTokenId",
+        "name": "toETID",
+        "type": "tuple"
+      },
+      {
+        "internalType": "address",
+        "name": "toAccount",
+        "type": "address"
+      }
+    ],
+    "name": "coinExchangeToChain",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
   }
 ]

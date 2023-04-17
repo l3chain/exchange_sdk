@@ -31,9 +31,7 @@ export declare class ExchangeRouter {
         };
     };
     get contractAddress(): {
-        HOST: string;
-        ETH: string;
-        BSC: string;
+        [x: string]: string;
     };
     constructor(props: {
         generatedDatas: ExchangePairMetadata[];

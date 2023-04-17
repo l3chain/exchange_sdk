@@ -110,6 +110,47 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "hash",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "chainIdentifier",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "shadowEmiter",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenContract",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "name": "decimals",
+            "type": "uint8"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct ExchangeTokenId",
+        "name": "etid",
+        "type": "tuple"
+      }
+    ],
+    "name": "DenyExchangeTokenId",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "fromAccount",
@@ -267,6 +308,41 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "chainIdentifier",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "shadowEmiter",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenContract",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "name": "decimals",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct ExchangeTokenId",
+        "name": "etid",
+        "type": "tuple"
+      }
+    ],
+    "name": "delAcceptExchangeTokenId",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
