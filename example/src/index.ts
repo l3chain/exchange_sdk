@@ -1,52 +1,49 @@
-import { ChainNameFromIdentifier, L3Chain } from "@l3chain/sdk";
-import { ABI, ExchangePairsGenerater, ExchangeRouter } from "@l3exchange/sdk"
+import { ChainIdentifier, ChainIdentifiers, ChainName, ChainNameFromIdentifier, ChainNames, L3Chain } from "@l3chain/sdk";
+import { ABI, ExchangePairsGenerater, ExchangeRouter, ExchangeTokenID } from "@l3exchange/sdk"
 import { toNumber, toBN, fromWei, toWei } from 'web3-utils';
 import Web3 from 'web3';
 
-// Exchange相关配置信息
-const exchangeConfig = {
+let config = {
     graphQL: {
         HOST: 'http://l3test.org:8000/subgraphs/name/l3/exchange_host',
-        ETH: 'http://l3test.org:8000/subgraphs/name/l3/exchange_eth',
         BSC: 'http://l3test.org:8000/subgraphs/name/l3/exchange_bsc'
     },
     providers: {
-        HOST: new Web3.providers.HttpProvider('http://l3test.org:18545'),
-        ETH: new Web3.providers.HttpProvider('http://l3test.org:28545'),
-        BSC: new Web3.providers.HttpProvider('http://l3test.org:38545'),
+        HOST: 'http://l3test.org:18545',
+        BSC: 'http://l3test.org:38545',
     },
     addresses: {
         factory: {
-            HOST: '0x35d6b4493b24e25Ec5bb89f944f5108efdD96309',
-            ETH: '0xD105277fD763006ED758939477F17587CcE68E95',
-            BSC: '0x5Cc22ED76e7A88eCcCD1eaD22843e426A16384b3'
+            HOST: '0x9a6579CA0e9FA2E79d7B0060601d13D698f96550',
+            BSC: '0x9a6579CA0e9FA2E79d7B0060601d13D698f96550'
         },
         router: {
-            HOST: '0xFe6c094ac4E9f72907bfd4B9034194bB16aD01ab',
-            ETH: '0x64c9216152E3373D42FFDFce9CB0D1CD4f01606F',
-            BSC: '0x35d6b4493b24e25Ec5bb89f944f5108efdD96309'
+            HOST: '0x69a75303f418664B5aDd25bD327d114e92a6F478',
+            BSC: '0x69a75303f418664B5aDd25bD327d114e92a6F478'
         }
     }
 }
 
-// L3Chain配置信息
-const l3config = {
-    HOST: {
-        web3Provider: exchangeConfig.providers.HOST,
-        contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e",
-        graphDataBaseHost: "http://l3test.org:8000/subgraphs/name/l3chain/host_database",
-    },
-    ETH: {
-        web3Provider: exchangeConfig.providers.ETH,
-        contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e"
-    },
-    BSC: {
-        web3Provider: exchangeConfig.providers.BSC,
-        contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e"
-    }
+
+let networkName: { [key: ChainIdentifier]: string } = {
+    '0x0000000000000000000000000000000000000000000000000000000000000000': 'PG Network',
+    '0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494': 'Ethereum Network Main',
+    '0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473499': 'BNB Smart Chain',
 }
 
-const l3 = new L3Chain(l3config);
+let l3 = new L3Chain({
+    HOST: {
+        web3Provider: new Web3.providers.HttpProvider(config.providers.HOST),
+        chainIdentifier: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e",
+        graphDataBaseHost: "http://l3test.org:8000/subgraphs/name/l3chain/host_database"
+    },
+    BSC: {
+        web3Provider: new Web3.providers.HttpProvider(config.providers.BSC),
+        chainIdentifier: "0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494",
+        contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e"
+    },
+})
 
 // 这里使用测试节点，测试节点上所有的账户都是解锁的，在实际使用中，请注意使用window.ethereum中的provider来接入MetaMask或者其他钱包插件
 const injectionWeb3 = new Web3(new Web3.providers.HttpProvider('http://l3test.org:18545'));
@@ -55,14 +52,14 @@ injectionWeb3.eth.getAccounts().then(async accounts => {
 
     ////////////////////////////////////////////////////////////////////////////////////
     // 获取Pair信息
-    let exchangePairs = await ExchangePairsGenerater(exchangeConfig);
+    let exchangePairs = await ExchangePairsGenerater(config);
     ////////////////////////////////////////////////////////////////////////////////////
 
 
     ////////////////////////////////////////////////////////////////////////////////////
     // 创建Router
     let router = new ExchangeRouter({
-        ...exchangeConfig,
+        ...config,
         l3chain: l3,
         generatedDatas: exchangePairs,
     });
@@ -75,12 +72,43 @@ injectionWeb3.eth.getAccounts().then(async accounts => {
 
     ////////////////////////////////////////////////////////////////////////////////////
     // 使用支持的第一个Pair作为例子
-    let usePair = hostPairs[0];
+    let usePair = hostPairs.find(p => p.metaData.tokenSymbol == 'USDT')!;
     ////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////
     // 使用第一个目标作为例子
     let targetEtid = usePair.toExchangeTokenIds[0];
+    ////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // 查询目标Pair
+    let targetPairs = usePair.toExchangeTokenIds.map(toETID =>
+        exchangePairs.find(e =>
+            e.etid.chainIdentifier == toETID.chainIdentifier &&
+            e.etid.shadowEmiter == toETID.shadowEmiter &&
+            e.etid.tokenContract == toETID.tokenContract
+        )!
+    )
+
+    console.log(targetPairs)
+    console.log(targetPairs.map(p => ChainNameFromIdentifier(p.etid.chainIdentifier)))
+
+    // let target: { [key: ChainName]: ExchangeTokenID[] } = {}
+    // for (let chainName of ChainNames) {
+    //     let chainIdentifier = ChainIdentifiers[chainName];
+    //     if (!chainIdentifier) {
+    //         continue;
+    //     }
+    //     target[chainName] = targetPairs.filter(p => p.etid.chainIdentifier == chainIdentifier).map(p => Object.assign(p.etid, {
+    //         tokenName: p.tokenName,
+    //         tokenSymbol: p.tokenSymbol,
+    //         tokenAddress: p.tokenAddress,
+    //         tokenDecimals: p.tokenDecimals
+    //     }))
+    // }
+
+    // console.log(target)
+
     ////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -115,7 +143,6 @@ injectionWeb3.eth.getAccounts().then(async accounts => {
     })
     ////////////////////////////////////////////////////////////////////////////////////
 
-
     ////////////////////////////////////////////////////////////////////////////////////
     // 发起交易,建立Router的合约交互实例
     let routerSender = new injectionWeb3.eth.Contract(ABI.Router, router.contractAddress.HOST!);
@@ -123,9 +150,19 @@ injectionWeb3.eth.getAccounts().then(async accounts => {
     let txSender = routerSender.methods.tokenExchangeToChain(
         usePair.metaData.etid,
         targetEtid,
-        accounts[8],
+        '0x8f53ACD8311564d873A2fd38473147770409d1F8',
         toWei('1')
     );
+
+    console.log('--------------------------------------------')
+    console.log(
+        usePair.metaData.etid,
+        targetEtid,
+        '0x8f53ACD8311564d873A2fd38473147770409d1F8',
+        toWei('1')
+    )
+    console.log('--------------------------------------------')
+
     let gas = await txSender.estimateGas({
         from: accounts[0],
         value: toBN(fees.feeAmount.toString()).add(

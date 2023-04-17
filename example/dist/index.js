@@ -54,61 +54,67 @@ var sdk_1 = require("@l3chain/sdk");
 var sdk_2 = require("@l3exchange/sdk");
 var web3_utils_1 = require("web3-utils");
 var web3_1 = __importDefault(require("web3"));
-// Exchange相关配置信息
-var exchangeConfig = {
+var config = {
     graphQL: {
         HOST: 'http://l3test.org:8000/subgraphs/name/l3/exchange_host',
-        ETH: 'http://l3test.org:8000/subgraphs/name/l3/exchange_eth',
         BSC: 'http://l3test.org:8000/subgraphs/name/l3/exchange_bsc'
     },
     providers: {
-        HOST: new web3_1.default.providers.HttpProvider('http://l3test.org:18545'),
-        ETH: new web3_1.default.providers.HttpProvider('http://l3test.org:28545'),
-        BSC: new web3_1.default.providers.HttpProvider('http://l3test.org:38545'),
+        HOST: 'http://l3test.org:18545',
+        BSC: 'http://l3test.org:38545',
     },
     addresses: {
         factory: {
-            HOST: '0x35d6b4493b24e25Ec5bb89f944f5108efdD96309',
-            ETH: '0xD105277fD763006ED758939477F17587CcE68E95',
-            BSC: '0x5Cc22ED76e7A88eCcCD1eaD22843e426A16384b3'
+            HOST: '0x9a6579CA0e9FA2E79d7B0060601d13D698f96550',
+            BSC: '0x9a6579CA0e9FA2E79d7B0060601d13D698f96550'
         },
         router: {
-            HOST: '0xFe6c094ac4E9f72907bfd4B9034194bB16aD01ab',
-            ETH: '0x64c9216152E3373D42FFDFce9CB0D1CD4f01606F',
-            BSC: '0x35d6b4493b24e25Ec5bb89f944f5108efdD96309'
+            HOST: '0x69a75303f418664B5aDd25bD327d114e92a6F478',
+            BSC: '0x69a75303f418664B5aDd25bD327d114e92a6F478'
         }
     }
 };
-// L3Chain配置信息
-var l3config = {
+var networkName = {
+    '0x0000000000000000000000000000000000000000000000000000000000000000': 'PG Network',
+    '0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494': 'Ethereum Network Main',
+    '0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473499': 'BNB Smart Chain',
+};
+var l3 = new sdk_1.L3Chain({
     HOST: {
-        web3Provider: exchangeConfig.providers.HOST,
+        web3Provider: new web3_1.default.providers.HttpProvider(config.providers.HOST),
+        chainIdentifier: "0x0000000000000000000000000000000000000000000000000000000000000000",
         contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e",
-        graphDataBaseHost: "http://l3test.org:8000/subgraphs/name/l3chain/host_database",
-    },
-    ETH: {
-        web3Provider: exchangeConfig.providers.ETH,
-        contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e"
+        graphDataBaseHost: "http://l3test.org:8000/subgraphs/name/l3chain/host_database"
     },
     BSC: {
-        web3Provider: exchangeConfig.providers.BSC,
+        web3Provider: new web3_1.default.providers.HttpProvider(config.providers.BSC),
+        chainIdentifier: "0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494",
         contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e"
-    }
-};
-var l3 = new sdk_1.L3Chain(l3config);
+    },
+});
 // 这里使用测试节点，测试节点上所有的账户都是解锁的，在实际使用中，请注意使用window.ethereum中的provider来接入MetaMask或者其他钱包插件
 var injectionWeb3 = new web3_1.default(new web3_1.default.providers.HttpProvider('http://l3test.org:18545'));
+console.log('0x'.padEnd(66, 'f'));
 injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void 0, void 0, void 0, function () {
-    var exchangePairs, router, hostPairs, usePair, targetEtid, fees, fromTokenContract, routerSender, txSender, gas, callret, exchangeHistory, _i, exchangeHistory_1, record, infos, _a, _b;
+    var exchangePairs, router, hostPairs, usePair, targetEtid, targetPairs, fees, fromTokenContract, routerSender, txSender, gas, callret, exchangeHistory, _i, exchangeHistory_1, record, infos, _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
-            case 0: return [4 /*yield*/, (0, sdk_2.ExchangePairsGenerater)(exchangeConfig)];
+            case 0: return [4 /*yield*/, (0, sdk_2.ExchangePairsGenerater)(config)];
             case 1:
                 exchangePairs = _c.sent();
-                router = new sdk_2.ExchangeRouter(__assign(__assign({}, exchangeConfig), { l3chain: l3, generatedDatas: exchangePairs }));
+                router = new sdk_2.ExchangeRouter(__assign(__assign({}, config), { l3chain: l3, generatedDatas: exchangePairs }));
                 hostPairs = router.supportExchangePairs('HOST');
-                usePair = hostPairs[0];
+                usePair = hostPairs.find(function (p) { return p.metaData.tokenSymbol == 'USDT'; });
                 targetEtid = usePair.toExchangeTokenIds[0];
+                targetPairs = usePair.toExchangeTokenIds.map(function (toETID) {
+                    return exchangePairs.find(function (e) {
+                        return e.etid.chainIdentifier == toETID.chainIdentifier &&
+                            e.etid.shadowEmiter == toETID.shadowEmiter &&
+                            e.etid.tokenContract == toETID.tokenContract;
+                    });
+                });
+                console.log(targetPairs);
+                console.log(targetPairs.map(function (p) { return (0, sdk_1.ChainNameFromIdentifier)(p.etid.chainIdentifier); }));
                 return [4 /*yield*/, usePair.exchangeToEstimateFee(targetEtid, accounts[0], accounts[8], injectionWeb3.utils.toWei('1'))];
             case 2:
                 fees = _c.sent();
@@ -132,7 +138,10 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
                 // 完成授权操作
                 _c.sent();
                 routerSender = new injectionWeb3.eth.Contract(sdk_2.ABI.Router, router.contractAddress.HOST);
-                txSender = routerSender.methods.tokenExchangeToChain(usePair.metaData.etid, targetEtid, accounts[8], (0, web3_utils_1.toWei)('1'));
+                txSender = routerSender.methods.tokenExchangeToChain(usePair.metaData.etid, targetEtid, '0x8f53ACD8311564d873A2fd38473147770409d1F8', (0, web3_utils_1.toWei)('1'));
+                console.log('--------------------------------------------');
+                console.log(usePair.metaData.etid, targetEtid, '0x8f53ACD8311564d873A2fd38473147770409d1F8', (0, web3_utils_1.toWei)('1'));
+                console.log('--------------------------------------------');
                 return [4 /*yield*/, txSender.estimateGas({
                         from: accounts[0],
                         value: (0, web3_utils_1.toBN)(fees.feeAmount.toString()).add((0, web3_utils_1.toBN)(fees.feel3.toString()))

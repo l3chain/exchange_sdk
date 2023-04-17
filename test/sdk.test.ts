@@ -9,40 +9,34 @@ describe("L3Exchange", function () {
     let config = {
         graphQL: {
             HOST: 'http://l3test.org:8000/subgraphs/name/l3/exchange_host',
-            ETH: 'http://l3test.org:8000/subgraphs/name/l3/exchange_eth',
             BSC: 'http://l3test.org:8000/subgraphs/name/l3/exchange_bsc'
         },
         providers: {
-            HOST: new Web3.providers.HttpProvider('http://l3test.org:18545'),
-            ETH: new Web3.providers.HttpProvider('http://l3test.org:28545'),
-            BSC: new Web3.providers.HttpProvider('http://l3test.org:38545'),
+            HOST: 'http://l3test.org:18545',
+            BSC: 'http://l3test.org:38545',
         },
         addresses: {
             factory: {
-                HOST: '0x35d6b4493b24e25Ec5bb89f944f5108efdD96309',
-                ETH: '0xD105277fD763006ED758939477F17587CcE68E95',
-                BSC: '0x5Cc22ED76e7A88eCcCD1eaD22843e426A16384b3'
+                HOST: '0x9a6579CA0e9FA2E79d7B0060601d13D698f96550',
+                BSC: '0x9a6579CA0e9FA2E79d7B0060601d13D698f96550'
             },
             router: {
-                HOST: '0xFe6c094ac4E9f72907bfd4B9034194bB16aD01ab',
-                ETH: '0x64c9216152E3373D42FFDFce9CB0D1CD4f01606F',
-                BSC: '0x35d6b4493b24e25Ec5bb89f944f5108efdD96309'
+                HOST: '0x69a75303f418664B5aDd25bD327d114e92a6F478',
+                BSC: '0x69a75303f418664B5aDd25bD327d114e92a6F478'
             }
         }
     }
 
     let l3 = new L3Chain({
         HOST: {
-            web3Provider: config.providers.HOST,
+            web3Provider: new Web3.providers.HttpProvider(config.providers.HOST),
+            chainIdentifier: "0x0000000000000000000000000000000000000000000000000000000000000000",
             contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e",
-            graphDataBaseHost: "http://l3test.org:8000/subgraphs/name/l3chain/host_database",
-        },
-        ETH: {
-            web3Provider: config.providers.ETH,
-            contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e"
+            graphDataBaseHost: "http://l3test.org:8000/subgraphs/name/l3chain/host_database"
         },
         BSC: {
-            web3Provider: config.providers.BSC,
+            web3Provider: new Web3.providers.HttpProvider(config.providers.BSC),
+            chainIdentifier: "0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494",
             contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e"
         },
     })
