@@ -236,6 +236,19 @@
   },
   {
     "inputs": [],
+    "name": "isMintBurnPair",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "ETID",
     "outputs": [
       {
