@@ -74,6 +74,18 @@ var config = {
         }
     }
 };
+var ChainIdentifierFromChainId = function (chainId) {
+    // 测试环境
+    return {
+        "38545": "0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494",
+        "18545": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    }[chainId.toString()];
+    // 产品环境
+    return {
+        "56": "0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494",
+        "1": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    }[chainId.toString()];
+};
 var networkName = {
     '0x0000000000000000000000000000000000000000000000000000000000000000': 'PG Network',
     '0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494': 'Ethereum Network Main',
@@ -94,9 +106,8 @@ var l3 = new sdk_1.L3Chain({
 });
 // 这里使用测试节点，测试节点上所有的账户都是解锁的，在实际使用中，请注意使用window.ethereum中的provider来接入MetaMask或者其他钱包插件
 var injectionWeb3 = new web3_1.default(new web3_1.default.providers.HttpProvider('http://l3test.org:18545'));
-console.log('0x'.padEnd(66, 'f'));
 injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void 0, void 0, void 0, function () {
-    var exchangePairs, router, hostPairs, usePair, targetEtid, targetPairs, fees, fromTokenContract, routerSender, txSender, gas, callret, exchangeHistory, _i, exchangeHistory_1, record, infos, _a, _b;
+    var exchangePairs, router, hostPairs, usePair, targetEtid, targetPairs, fees, fromTokenContract, routerSender, txSender, callret, gas, exchangeHistory, _i, exchangeHistory_1, record, infos, _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0: return [4 /*yield*/, (0, sdk_2.ExchangePairsGenerater)(config)];
@@ -104,7 +115,9 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
                 exchangePairs = _c.sent();
                 router = new sdk_2.ExchangeRouter(__assign(__assign({}, config), { l3chain: l3, generatedDatas: exchangePairs }));
                 hostPairs = router.supportExchangePairs('HOST');
-                usePair = hostPairs.find(function (p) { return p.metaData.tokenSymbol == 'USDT'; });
+                return [4 /*yield*/, router.wrappedCoinPair('HOST')];
+            case 2:
+                usePair = (_c.sent());
                 targetEtid = usePair.toExchangeTokenIds[0];
                 targetPairs = usePair.toExchangeTokenIds.map(function (toETID) {
                     return exchangePairs.find(function (e) {
@@ -113,59 +126,30 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
                             e.etid.tokenContract == toETID.tokenContract;
                     });
                 });
-                console.log(targetPairs);
-                console.log(targetPairs.map(function (p) { return (0, sdk_1.ChainNameFromIdentifier)(p.etid.chainIdentifier); }));
-                return [4 /*yield*/, usePair.exchangeToEstimateFee(targetEtid, accounts[0], accounts[8], injectionWeb3.utils.toWei('1'))];
-            case 2:
-                fees = _c.sent();
-                console.log(fees);
-                fromTokenContract = new injectionWeb3.eth.Contract(sdk_2.ABI.ERC20, usePair.metaData.tokenAddress);
-                ////////////////////////////////////////////////////////////////////////////////////
-                ////////////////////////////////////////////////////////////////////////////////////
-                // 完成授权操作
-                return [4 /*yield*/, fromTokenContract.methods.approve(router.contractAddress.HOST, injectionWeb3.utils.toWei('1')).send({
-                        from: accounts[0],
-                    }).then(function () {
-                        console.log("Approve Router Successed");
-                    })
-                    ////////////////////////////////////////////////////////////////////////////////////
-                    ////////////////////////////////////////////////////////////////////////////////////
-                    // 发起交易,建立Router的合约交互实例
-                ];
+                return [4 /*yield*/, usePair.exchangeToEstimateFee(targetEtid, accounts[0], accounts[8], (0, web3_utils_1.toBN)(10).mul((0, web3_utils_1.toBN)(1e7)))];
             case 3:
-                ////////////////////////////////////////////////////////////////////////////////////
-                ////////////////////////////////////////////////////////////////////////////////////
-                // 完成授权操作
-                _c.sent();
+                fees = _c.sent();
+                fromTokenContract = new injectionWeb3.eth.Contract(sdk_2.ABI.ERC20, usePair.metaData.tokenAddress);
                 routerSender = new injectionWeb3.eth.Contract(sdk_2.ABI.Router, router.contractAddress.HOST);
-                txSender = routerSender.methods.tokenExchangeToChain(usePair.metaData.etid, targetEtid, '0x8f53ACD8311564d873A2fd38473147770409d1F8', (0, web3_utils_1.toWei)('1'));
-                console.log('--------------------------------------------');
-                console.log(usePair.metaData.etid, targetEtid, '0x8f53ACD8311564d873A2fd38473147770409d1F8', (0, web3_utils_1.toWei)('1'));
-                console.log('--------------------------------------------');
-                return [4 /*yield*/, txSender.estimateGas({
-                        from: accounts[0],
-                        value: (0, web3_utils_1.toBN)(fees.feeAmount.toString()).add((0, web3_utils_1.toBN)(fees.feel3.toString()))
-                    })];
-            case 4:
-                gas = _c.sent();
-                console.log("tokenExchangeToChain gas: ".concat(gas));
+                txSender = routerSender.methods.coinExchangeToChain(usePair.metaData.etid, targetEtid, accounts[8]);
                 return [4 /*yield*/, txSender.call({
                         from: accounts[0],
-                        value: (0, web3_utils_1.toBN)(fees.feeAmount.toString()).add((0, web3_utils_1.toBN)(fees.feel3.toString()))
+                        value: (0, web3_utils_1.toBN)(fees.feeAmount.toString()).add((0, web3_utils_1.toBN)(fees.feel3.toString())).add((0, web3_utils_1.toBN)((0, web3_utils_1.toWei)("1")))
                     })];
-            case 5:
+            case 4:
                 callret = _c.sent();
                 console.log("tokenExchangeToChain call: ".concat(callret.toString()));
-                return [4 /*yield*/, router.selectExchangeHistory('HOST', {
-                        first: 10,
-                        orderBy: "time",
-                        orderDirection: "asc",
-                        where: {
-                            fromAccount: accounts[0]
-                        }
+                return [4 /*yield*/, txSender.estimateGas({
+                        from: accounts[0],
+                        value: (0, web3_utils_1.toBN)(fees.feeAmount.toString()).add((0, web3_utils_1.toBN)(fees.feel3.toString())).add((0, web3_utils_1.toBN)((0, web3_utils_1.toWei)("1")))
                     })];
+            case 5:
+                gas = _c.sent();
+                console.log("tokenExchangeToChain gas: ".concat(gas));
+                return [2 /*return*/];
             case 6:
                 exchangeHistory = _c.sent();
+                console.log(exchangeHistory);
                 _i = 0, exchangeHistory_1 = exchangeHistory;
                 _c.label = 7;
             case 7:

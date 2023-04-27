@@ -108,6 +108,58 @@ export class ExchangeRouter {
     ).map(data => new ExchangePair(this._web3s[fromChain]!, data))
 
     /**
+     * 获取对应网络的主币映射代币的Pair，不一定存在
+     * 
+     * @param onChain 
+     * @returns 
+     */
+    wrappedCoinPair = async (onChain: ChainName) => {
+        let wcoinAddress = await this._contracts.router[onChain]!.methods.WCOIN().call();
+
+        let wcoinData = this.metaDatas.find(data =>
+            data.etid.chainIdentifier.toLowerCase() == ChainIdentifiers[onChain].toLowerCase() &&
+            data.etid.tokenContract.toLowerCase() == wcoinAddress.toLowerCase()
+        )
+
+        if (!wcoinData) {
+            return undefined;
+        }
+
+        return new ExchangePair(this._web3s[onChain]!, wcoinData!)
+    }
+
+    selectBorrowHistory = async (onChain: ChainName, filter: {
+        skip?: number,
+        first: number,
+        where?: { [key: string]: any },
+        orderDirection?: "asc" | "desc"
+        orderBy?: string
+    }): Promise<{ borrower: string, amount: string }[]> => {
+        let gql = `
+        {
+            borrowAmounts(
+                ${!filter.where ? "" : `where:${JSON.stringify(filter.where).replace(/"(\w+)":/g, '$1:')}`}
+                ${!filter.skip ? "skip:0" : `skip: ${filter.skip}`}
+                ${!filter.first ? "" : `frist: ${filter.first}`}
+                ${!filter.orderDirection ? "orderDirection:desc" : `orderDirection: ${filter.orderDirection}`}
+                ${!filter.orderBy ? "orderBy:amount" : `orderBy: ${filter.orderBy}`}
+            ) {
+                amount
+                borrower
+            }
+        }
+        `
+        return await this._clients[onChain]!.query<{
+            borrowAmounts: {
+                borrower: string,
+                amount: string,
+            }[]
+        }>(gql).then(data => {
+            return data.borrowAmounts;
+        });
+    }
+
+    /**
      * 查询历史记录:
      * 不能混合查询，一次智能查询一个网络中的数据，并不完全是GraphQL的数据，会对最终数据做一些可读性的转换一笔成功的跨
      * 网络代币交换逻辑，应该由A存B取组成，但是在各种限制条件下，暂时没有找到好的办法解决不同网络之间两个交易记录的关联

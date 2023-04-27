@@ -83,6 +83,25 @@ export declare class ExchangeRouter {
      */
     supportExchangePairs: (fromChain: ChainName) => ExchangePair[];
     /**
+     * 获取对应网络的主币映射代币的Pair，不一定存在
+     *
+     * @param onChain
+     * @returns
+     */
+    wrappedCoinPair: (onChain: ChainName) => Promise<ExchangePair | undefined>;
+    selectBorrowHistory: (onChain: ChainName, filter: {
+        skip?: number | undefined;
+        first: number;
+        where?: {
+            [key: string]: any;
+        } | undefined;
+        orderDirection?: "asc" | "desc" | undefined;
+        orderBy?: string | undefined;
+    }) => Promise<{
+        borrower: string;
+        amount: string;
+    }[]>;
+    /**
      * 查询历史记录:
      * 不能混合查询，一次智能查询一个网络中的数据，并不完全是GraphQL的数据，会对最终数据做一些可读性的转换一笔成功的跨
      * 网络代币交换逻辑，应该由A存B取组成，但是在各种限制条件下，暂时没有找到好的办法解决不同网络之间两个交易记录的关联
