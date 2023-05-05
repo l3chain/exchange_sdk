@@ -85,8 +85,12 @@ injectionWeb3.eth.getAccounts().then(async accounts => {
     ////////////////////////////////////////////////////////////////////////////////////
     // 使用支持的第一个Pair作为例子
     // let usePair = hostPairs.find(p => p.metaData.tokenSymbol == 'D7T')!;
-    let usePair = (await router.wrappedCoinPair('HOST'))!;
+    // let usePair = (await router.wrappedCoinPair('HOST'))!
+    let usePair = hostPairs[0];
     ////////////////////////////////////////////////////////////////////////////////////
+    // console.log(`WCoinPair: ${usePair.metaData.id}`)
+    // hostPairs.forEach(p => console.log(p.metaData.id))
+    // return;
 
     ////////////////////////////////////////////////////////////////////////////////////
     // 使用第一个目标作为例子
@@ -129,11 +133,11 @@ injectionWeb3.eth.getAccounts().then(async accounts => {
 
     ////////////////////////////////////////////////////////////////////////////////////
     // 完成授权操作
-    // await fromTokenContract.methods.approve(router.contractAddress.HOST, injectionWeb3.utils.toWei('10000000')).send({
-    //     from: accounts[0],
-    // }).then(() => {
-    //     console.log(`Approve Router Successed`);
-    // })
+    await fromTokenContract.methods.approve(router.contractAddress.HOST, injectionWeb3.utils.toWei('10000000')).send({
+        from: accounts[0],
+    }).then(() => {
+        console.log(`Approve Router Successed`);
+    })
     ////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -141,17 +145,17 @@ injectionWeb3.eth.getAccounts().then(async accounts => {
     let routerSender = new injectionWeb3.eth.Contract(ABI.Router, router.contractAddress.HOST!);
 
     // 一般代币跨链
-    // let txSender = routerSender.methods.tokenExchangeToChain(
-    //     usePair.metaData.etid,
-    //     targetEtid,
-    //     accounts[8],
-    //     toBN(10).mul(toBN(1e7))
-    // )
-    let txSender = routerSender.methods.coinExchangeToChain(
+    let txSender = routerSender.methods.tokenExchangeToChain(
         usePair.metaData.etid,
         targetEtid,
-        accounts[8]
+        accounts[8],
+        toBN(10).mul(toBN(1e7))
     )
+    // let txSender = routerSender.methods.coinExchangeToChain(
+    //     usePair.metaData.etid,
+    //     targetEtid,
+    //     accounts[8]
+    // )
 
     let callret = await txSender.call({
         from: accounts[0],
@@ -168,14 +172,15 @@ injectionWeb3.eth.getAccounts().then(async accounts => {
         ).add(toBN(toWei("1")))
     })
     console.log(`tokenExchangeToChain gas: ${gas}`);
+    // return;
+    await txSender.send({
+        from: accounts[0],
+        gas: gas,
+        value: toBN(fees.feeAmount.toString()).add(
+            toBN(fees.feel3.toString())
+        )
+    }).then(console.log)
     return;
-    // await txSender.send({
-    //     from: accounts[0],
-    //     gas: gas,
-    //     value: toBN(fees.feeAmount.toString()).add(
-    //         toBN(fees.feel3.toString())
-    //     )
-    // }).then(console.log)
     ////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////

@@ -115,9 +115,7 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
                 exchangePairs = _c.sent();
                 router = new sdk_2.ExchangeRouter(__assign(__assign({}, config), { l3chain: l3, generatedDatas: exchangePairs }));
                 hostPairs = router.supportExchangePairs('HOST');
-                return [4 /*yield*/, router.wrappedCoinPair('HOST')];
-            case 2:
-                usePair = (_c.sent());
+                usePair = hostPairs[0];
                 targetEtid = usePair.toExchangeTokenIds[0];
                 targetPairs = usePair.toExchangeTokenIds.map(function (toETID) {
                     return exchangePairs.find(function (e) {
@@ -127,11 +125,28 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
                     });
                 });
                 return [4 /*yield*/, usePair.exchangeToEstimateFee(targetEtid, accounts[0], accounts[8], (0, web3_utils_1.toBN)(10).mul((0, web3_utils_1.toBN)(1e7)))];
-            case 3:
+            case 2:
                 fees = _c.sent();
                 fromTokenContract = new injectionWeb3.eth.Contract(sdk_2.ABI.ERC20, usePair.metaData.tokenAddress);
+                ////////////////////////////////////////////////////////////////////////////////////
+                ////////////////////////////////////////////////////////////////////////////////////
+                // 完成授权操作
+                return [4 /*yield*/, fromTokenContract.methods.approve(router.contractAddress.HOST, injectionWeb3.utils.toWei('10000000')).send({
+                        from: accounts[0],
+                    }).then(function () {
+                        console.log("Approve Router Successed");
+                    })
+                    ////////////////////////////////////////////////////////////////////////////////////
+                    ////////////////////////////////////////////////////////////////////////////////////
+                    // 发起交易,建立Router的合约交互实例
+                ];
+            case 3:
+                ////////////////////////////////////////////////////////////////////////////////////
+                ////////////////////////////////////////////////////////////////////////////////////
+                // 完成授权操作
+                _c.sent();
                 routerSender = new injectionWeb3.eth.Contract(sdk_2.ABI.Router, router.contractAddress.HOST);
-                txSender = routerSender.methods.coinExchangeToChain(usePair.metaData.etid, targetEtid, accounts[8]);
+                txSender = routerSender.methods.tokenExchangeToChain(usePair.metaData.etid, targetEtid, accounts[8], (0, web3_utils_1.toBN)(10).mul((0, web3_utils_1.toBN)(1e7)));
                 return [4 /*yield*/, txSender.call({
                         from: accounts[0],
                         value: (0, web3_utils_1.toBN)(fees.feeAmount.toString()).add((0, web3_utils_1.toBN)(fees.feel3.toString())).add((0, web3_utils_1.toBN)((0, web3_utils_1.toWei)("1")))
@@ -146,29 +161,38 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
             case 5:
                 gas = _c.sent();
                 console.log("tokenExchangeToChain gas: ".concat(gas));
-                return [2 /*return*/];
+                // return;
+                return [4 /*yield*/, txSender.send({
+                        from: accounts[0],
+                        gas: gas,
+                        value: (0, web3_utils_1.toBN)(fees.feeAmount.toString()).add((0, web3_utils_1.toBN)(fees.feel3.toString()))
+                    }).then(console.log)];
             case 6:
+                // return;
+                _c.sent();
+                return [2 /*return*/];
+            case 7:
                 exchangeHistory = _c.sent();
                 console.log(exchangeHistory);
                 _i = 0, exchangeHistory_1 = exchangeHistory;
-                _c.label = 7;
-            case 7:
-                if (!(_i < exchangeHistory_1.length)) return [3 /*break*/, 10];
+                _c.label = 8;
+            case 8:
+                if (!(_i < exchangeHistory_1.length)) return [3 /*break*/, 11];
                 record = exchangeHistory_1[_i];
                 _a = ["".concat((0, sdk_1.ChainNameFromIdentifier)(record.from.chainIdentifier), "-").concat(record.from.tokenSymbol), '/', "".concat((0, sdk_1.ChainNameFromIdentifier)(record.to.chainIdentifier), "-").concat(record.to.tokenSymbol), " ",
                     record.from.account, " -> ", record.to.account, " : ".concat((0, web3_utils_1.fromWei)(record.amount))];
                 _b = " (".concat;
                 return [4 /*yield*/, router.getExchangeHistoryState(record)];
-            case 8:
+            case 9:
                 infos = _a.concat([
                     _b.apply(" (", [(_c.sent()).toString(), ")"])
                 ]);
                 console.log(infos.join(''));
-                _c.label = 9;
-            case 9:
+                _c.label = 10;
+            case 10:
                 _i++;
-                return [3 /*break*/, 7];
-            case 10: return [2 /*return*/];
+                return [3 /*break*/, 8];
+            case 11: return [2 /*return*/];
         }
     });
 }); });
