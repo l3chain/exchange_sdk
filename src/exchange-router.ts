@@ -140,7 +140,7 @@ export class ExchangeRouter {
             borrowAmounts(
                 ${!filter.where ? "" : `where:${JSON.stringify(filter.where).replace(/"(\w+)":/g, '$1:')}`}
                 ${!filter.skip ? "skip:0" : `skip: ${filter.skip}`}
-                ${!filter.first ? "" : `frist: ${filter.first}`}
+                ${!filter.first ? "" : `first: ${filter.first}`}
                 ${!filter.orderDirection ? "orderDirection:desc" : `orderDirection: ${filter.orderDirection}`}
                 ${!filter.orderBy ? "orderBy:amount" : `orderBy: ${filter.orderBy}`}
             ) {
@@ -192,7 +192,7 @@ export class ExchangeRouter {
             exchangeds(
                 ${!filter.where ? "" : `where:${JSON.stringify(filter.where).replace(/"(\w+)":/g, '$1:')}`}
                 ${!filter.skip ? "skip:0" : `skip: ${filter.skip}`}
-                ${!filter.first ? "" : `frist: ${filter.first}`}
+                ${!filter.first ? "" : `first:${filter.first}`}
                 ${!filter.orderDirection ? "orderDirection:desc" : `orderDirection: ${filter.orderDirection}`}
                 ${!filter.orderBy ? "orderBy:time" : `orderBy: ${filter.orderBy}`}
             ) {
@@ -216,6 +216,7 @@ export class ExchangeRouter {
             }
         }
         `
+
         let exchangeds = await this._clients[fromChain]?.query<{
             exchangeds: {
                 id: string,
@@ -365,7 +366,7 @@ export class ExchangeRouter {
             borrowAmounts(
                 ${!filter.where ? "" : `where:${JSON.stringify(filter.where).replace(/"(\w+)":/g, '$1:')}`}
                 ${!filter.skip ? "skip:0" : `skip: ${filter.skip}`}
-                ${!filter.first ? "" : `frist: ${filter.first}`}
+                ${!filter.first ? "" : `first: ${filter.first}`}
             ) {
                 amount
                 borrower
