@@ -284,7 +284,7 @@ export class ExchangeRouter {
                     tokenAddress: toPair?.tokenAddress,
                     tokenName: toPair?.tokenName,
                     tokenSymbol: toPair?.tokenSymbol,
-                    tokenDecimals: fromPair ? toNumber(fromPair.tokenDecimals) : undefined
+                    tokenDecimals: toPair ? toNumber(toPair.tokenDecimals) : undefined
                 },
                 amount: toBN(record.amount),
                 fee: toBN(record.fee),
