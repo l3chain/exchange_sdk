@@ -174,17 +174,12 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "symbol",
-        "type": "string"
+        "internalType": "address",
+        "name": "tokenContractAddress",
+        "type": "address"
       }
     ],
-    "name": "createMintBurnExchangePair",
+    "name": "createExchangePairSupportPairMintBurnInterface",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

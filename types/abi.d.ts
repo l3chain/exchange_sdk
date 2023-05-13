@@ -3,4 +3,6 @@ export declare const ABI: {
     Factory: any;
     Router: any;
     Pair: any;
+    WrappedCoin: any;
+    PairMintBurn: any;
 };
