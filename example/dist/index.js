@@ -65,12 +65,12 @@ var config = {
     },
     addresses: {
         factory: {
-            HOST: '0x9a6579CA0e9FA2E79d7B0060601d13D698f96550',
-            BSC: '0x9a6579CA0e9FA2E79d7B0060601d13D698f96550'
+            HOST: '0x20F611104239191dEaad083a8ED28ec8109C47EB',
+            BSC: '0x20F611104239191dEaad083a8ED28ec8109C47EB'
         },
         router: {
-            HOST: '0x69a75303f418664B5aDd25bD327d114e92a6F478',
-            BSC: '0x69a75303f418664B5aDd25bD327d114e92a6F478'
+            HOST: '0x19641d3a92E85aF17447ce29367723cc85156d86',
+            BSC: '0x19641d3a92E85aF17447ce29367723cc85156d86'
         }
     }
 };
@@ -113,6 +113,7 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
             case 0: return [4 /*yield*/, (0, sdk_2.ExchangePairsGenerater)(config)];
             case 1:
                 exchangePairs = _c.sent();
+                console.log(exchangePairs);
                 router = new sdk_2.ExchangeRouter(__assign(__assign({}, config), { l3chain: l3, generatedDatas: exchangePairs }));
                 hostPairs = router.supportExchangePairs('HOST');
                 usePair = hostPairs[0];

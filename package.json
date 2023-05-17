@@ -1,6 +1,6 @@
 {
   "name": "@l3exchange/sdk",
-  "version": "0.0.13",
+  "version": "1.0.0",
   "main": "./lib/index.js",
   "types": "./types/index.d.ts",
   "license": "MIT",
