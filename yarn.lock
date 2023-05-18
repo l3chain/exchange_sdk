@@ -229,8 +229,8 @@
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
 "@l3chain/sdk@github:l3chain/sdk":
-  version "1.0.0"
-  resolved "https://codeload.github.com/l3chain/sdk/tar.gz/c0a3d8fd11f865efde6ba030b540a9e99a3dff97"
+  version "1.0.1"
+  resolved "https://codeload.github.com/l3chain/sdk/tar.gz/a0aa60f14b9a469b28b638ba4fa404da0f369e40"
   dependencies:
     merkletreejs "0.3.9"
     web3 "1.8.2"
