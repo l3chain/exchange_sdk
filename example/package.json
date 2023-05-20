@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "start": "tsc -b tsconfig.json && node ./",
+    "start:batch": "tsc -b tsconfig.json && node ./dist/batch_exchange_to.js",
     "build": "tsc -b tsconfig.json",
     "test": "cross-env TS_NODE_PROJECT='test/tsconfig.test.json' mocha test/**/**.test.ts"
   },
