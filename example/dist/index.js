@@ -25,7 +25,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+        while (_) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -86,11 +86,6 @@ var ChainIdentifierFromChainId = function (chainId) {
         "1": "0x0000000000000000000000000000000000000000000000000000000000000000"
     }[chainId.toString()];
 };
-var networkName = {
-    '0x0000000000000000000000000000000000000000000000000000000000000000': 'PG Network',
-    '0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494': 'Ethereum Network Main',
-    '0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473499': 'BNB Smart Chain',
-};
 var l3 = new sdk_1.L3Chain({
     HOST: {
         web3Provider: new web3_1.default.providers.HttpProvider(config.providers.HOST),
@@ -110,7 +105,7 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
     var exchangePairs, router, hostPairs, usePair, targetEtid, targetPairs, fees, fromTokenContract, routerSender, txSender, callret, gas, exchangeHistory, _i, exchangeHistory_1, record, infos, _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
-            case 0: return [4 /*yield*/, (0, sdk_2.ExchangePairsGenerater)(config)];
+            case 0: return [4 /*yield*/, sdk_2.ExchangePairsGenerater(config)];
             case 1:
                 exchangePairs = _c.sent();
                 console.log(exchangePairs);
@@ -125,7 +120,7 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
                             e.etid.tokenContract == toETID.tokenContract;
                     });
                 });
-                return [4 /*yield*/, usePair.exchangeToEstimateFee(targetEtid, accounts[0], accounts[8], (0, web3_utils_1.toBN)(10).mul((0, web3_utils_1.toBN)(1e7)))];
+                return [4 /*yield*/, usePair.exchangeToEstimateFee(targetEtid, accounts[0], accounts[8], web3_utils_1.toBN(10).mul(web3_utils_1.toBN(1e7)))];
             case 2:
                 fees = _c.sent();
                 fromTokenContract = new injectionWeb3.eth.Contract(sdk_2.ABI.ERC20, usePair.metaData.tokenAddress);
@@ -147,26 +142,26 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
                 // 完成授权操作
                 _c.sent();
                 routerSender = new injectionWeb3.eth.Contract(sdk_2.ABI.Router, router.contractAddress.HOST);
-                txSender = routerSender.methods.tokenExchangeToChain(usePair.metaData.etid, targetEtid, accounts[8], (0, web3_utils_1.toBN)(10).mul((0, web3_utils_1.toBN)(1e7)));
+                txSender = routerSender.methods.tokenExchangeToChain(usePair.metaData.etid, targetEtid, accounts[8], web3_utils_1.toBN(10).mul(web3_utils_1.toBN(1e7)));
                 return [4 /*yield*/, txSender.call({
                         from: accounts[0],
-                        value: (0, web3_utils_1.toBN)(fees.feeAmount.toString()).add((0, web3_utils_1.toBN)(fees.feel3.toString())).add((0, web3_utils_1.toBN)((0, web3_utils_1.toWei)("1")))
+                        value: web3_utils_1.toBN(fees.feeAmount.toString()).add(web3_utils_1.toBN(fees.feel3.toString())).add(web3_utils_1.toBN(web3_utils_1.toWei("1")))
                     })];
             case 4:
                 callret = _c.sent();
-                console.log("tokenExchangeToChain call: ".concat(callret.toString()));
+                console.log("tokenExchangeToChain call: " + callret.toString());
                 return [4 /*yield*/, txSender.estimateGas({
                         from: accounts[0],
-                        value: (0, web3_utils_1.toBN)(fees.feeAmount.toString()).add((0, web3_utils_1.toBN)(fees.feel3.toString())).add((0, web3_utils_1.toBN)((0, web3_utils_1.toWei)("1")))
+                        value: web3_utils_1.toBN(fees.feeAmount.toString()).add(web3_utils_1.toBN(fees.feel3.toString())).add(web3_utils_1.toBN(web3_utils_1.toWei("1")))
                     })];
             case 5:
                 gas = _c.sent();
-                console.log("tokenExchangeToChain gas: ".concat(gas));
+                console.log("tokenExchangeToChain gas: " + gas);
                 // return;
                 return [4 /*yield*/, txSender.send({
                         from: accounts[0],
                         gas: gas,
-                        value: (0, web3_utils_1.toBN)(fees.feeAmount.toString()).add((0, web3_utils_1.toBN)(fees.feel3.toString()))
+                        value: web3_utils_1.toBN(fees.feeAmount.toString()).add(web3_utils_1.toBN(fees.feel3.toString()))
                     }).then(console.log)];
             case 6:
                 // return;
@@ -180,13 +175,19 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
             case 8:
                 if (!(_i < exchangeHistory_1.length)) return [3 /*break*/, 11];
                 record = exchangeHistory_1[_i];
-                _a = ["".concat((0, sdk_1.ChainNameFromIdentifier)(record.from.chainIdentifier), "-").concat(record.from.tokenSymbol), '/', "".concat((0, sdk_1.ChainNameFromIdentifier)(record.to.chainIdentifier), "-").concat(record.to.tokenSymbol), " ",
-                    record.from.account, " -> ", record.to.account, " : ".concat((0, web3_utils_1.fromWei)(record.amount))];
-                _b = " (".concat;
+                _a = [sdk_1.ChainNameFromIdentifier(record.from.chainIdentifier) + "-" + record.from.tokenSymbol,
+                    '/',
+                    sdk_1.ChainNameFromIdentifier(record.to.chainIdentifier) + "-" + record.to.tokenSymbol,
+                    " ",
+                    record.from.account,
+                    " -> ",
+                    record.to.account,
+                    " : " + web3_utils_1.fromWei(record.amount)];
+                _b = " (";
                 return [4 /*yield*/, router.getExchangeHistoryState(record)];
             case 9:
                 infos = _a.concat([
-                    _b.apply(" (", [(_c.sent()).toString(), ")"])
+                    _b + (_c.sent()).toString() + ")"
                 ]);
                 console.log(infos.join(''));
                 _c.label = 10;

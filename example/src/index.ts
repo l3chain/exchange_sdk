@@ -38,12 +38,6 @@ const ChainIdentifierFromChainId = (chainId: number | string) => {
     }[chainId.toString()];
 }
 
-let networkName: { [key: ChainIdentifier]: string } = {
-    '0x0000000000000000000000000000000000000000000000000000000000000000': 'PG Network',
-    '0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494': 'Ethereum Network Main',
-    '0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473499': 'BNB Smart Chain',
-}
-
 let l3 = new L3Chain({
     HOST: {
         web3Provider: new Web3.providers.HttpProvider(config.providers.HOST),

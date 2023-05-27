@@ -25,7 +25,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+        while (_) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -57,8 +57,8 @@ var web3_1 = __importDefault(require("web3"));
 var hdwallet_provider_1 = __importDefault(require("@truffle/hdwallet-provider"));
 var config = {
     graphQL: {
-        HOST: "".concat(process.env.GRAPH_HOST, "/subgraphs/name/l3/exchange_host"),
-        BSC: "".concat(process.env.GRAPH_HOST, "/subgraphs/name/l3/exchange_bsc")
+        HOST: process.env.GRAPH_HOST + "/subgraphs/name/l3/exchange_host",
+        BSC: process.env.GRAPH_HOST + "/subgraphs/name/l3/exchange_bsc"
     },
     providers: {
         HOST: process.env.HOST_RPC,
@@ -80,7 +80,7 @@ var l3 = new sdk_1.L3Chain({
         web3Provider: new web3_1.default.providers.HttpProvider(config.providers.HOST),
         chainIdentifier: "0x0000000000000000000000000000000000000000000000000000000000000000",
         contractAddress: "0xfb93Ba0cE755Ce1f0c6c620BA868FA5F0c9889fb",
-        graphDataBaseHost: "".concat(process.env.GRAPH_HOST, "/subgraphs/name/l3chain/host_database"),
+        graphDataBaseHost: process.env.GRAPH_HOST + "/subgraphs/name/l3chain/host_database",
     },
     BSC: {
         web3Provider: new web3_1.default.providers.HttpProvider(config.providers.BSC),
@@ -91,15 +91,15 @@ var l3 = new sdk_1.L3Chain({
 var senderProvider = new hdwallet_provider_1.default(process.env.TEST_PK, process.env.HOST_RPC);
 var injectionWeb3 = new web3_1.default(senderProvider);
 var BatchTransactionConfig = {
-    exchangeAmountMul: (0, web3_utils_1.toBN)((0, web3_utils_1.toWei)('0.0001')),
+    exchangeAmountMul: web3_utils_1.toBN(web3_utils_1.toWei('0.0001')),
     batchCount: 100,
-    gasPrice: (0, web3_utils_1.toBN)((0, web3_utils_1.toWei)('500', 'Gwei'))
+    gasPrice: web3_utils_1.toBN(web3_utils_1.toWei('500', 'Gwei'))
 };
 injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void 0, void 0, void 0, function () {
     var exchangePairs, router, hostPairs, usePair, targetEtid, fees, routerSender, txSender, data, rawTxs, gas, nonce, i, rawTx, sentCount, senders;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, (0, sdk_2.ExchangePairsGenerater)(config)];
+            case 0: return [4 /*yield*/, sdk_2.ExchangePairsGenerater(config)];
             case 1:
                 exchangePairs = _a.sent();
                 router = new sdk_2.ExchangeRouter(__assign(__assign({}, config), { l3chain: l3, generatedDatas: exchangePairs }));
@@ -115,11 +115,11 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
                 rawTxs = [];
                 return [4 /*yield*/, txSender.estimateGas({
                         from: senderProvider.getAddress(),
-                        value: (0, web3_utils_1.toBN)(fees.feeAmount.toString()).add((0, web3_utils_1.toBN)(fees.feel3.toString())).add(BatchTransactionConfig.exchangeAmountMul)
+                        value: web3_utils_1.toBN(fees.feeAmount.toString()).add(web3_utils_1.toBN(fees.feel3.toString())).add(BatchTransactionConfig.exchangeAmountMul)
                     }).then(web3_utils_1.toBN)];
             case 3:
                 gas = _a.sent();
-                console.log("Sign ".concat(BatchTransactionConfig.batchCount, " transactions..."));
+                console.log("Sign " + BatchTransactionConfig.batchCount + " transactions...");
                 return [4 /*yield*/, injectionWeb3.eth.getTransactionCount(senderProvider.getAddress())];
             case 4:
                 nonce = _a.sent();
@@ -131,8 +131,8 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
                         from: senderProvider.getAddress(),
                         to: router.contractAddress.HOST,
                         nonce: nonce,
-                        value: (0, web3_utils_1.toBN)(fees.feeAmount.toString())
-                            .add((0, web3_utils_1.toBN)(fees.feel3.toString()))
+                        value: web3_utils_1.toBN(fees.feeAmount.toString())
+                            .add(web3_utils_1.toBN(fees.feel3.toString()))
                             .add(BatchTransactionConfig.exchangeAmountMul.muln(i + 1)),
                         data: data,
                         gas: gas.muln(2),
@@ -150,7 +150,7 @@ injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void
                 console.log("Sign Tx Successed");
                 sentCount = 0;
                 senders = rawTxs.map(function (txData) {
-                    console.log("Total Sent Count: ".concat(sentCount++));
+                    console.log("Total Sent Count: " + sentCount++);
                     return injectionWeb3.eth.sendSignedTransaction(txData);
                 });
                 return [4 /*yield*/, Promise.all(senders).then(function (receipts) {
