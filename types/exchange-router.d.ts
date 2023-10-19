@@ -4,53 +4,28 @@ import { Contract } from 'web3-eth-contract';
 import { provider } from 'web3-core';
 import { L3Chain, ChainName, GraphQlClient } from '@l3chain/sdk';
 import { ExchangePair } from './exchange-pair';
-import { ExchangePairMetadata, ExchangeHistory, CertificateState } from "./entity";
+import { ExchangePairMetadata, ExchangeHistory, CertificateState, ExchangeTokenID } from "./entity";
+import { ExchangeTransactionBuilder } from './exchange-builder';
+type ChainComponent = {
+    web3: Web3;
+    client: GraphQlClient;
+    factory: Contract;
+    router: Contract;
+};
 export declare class ExchangeRouter {
     metaDatas: ExchangePairMetadata[];
-    protected _l3chain: L3Chain;
-    protected _web3s: {
-        [key in ChainName]?: Web3;
-    };
-    protected _clients: {
-        [key in ChainName]?: GraphQlClient;
-    };
-    protected _addresses: {
-        factory: {
-            [key in ChainName]: string;
-        };
-        router: {
-            [key in ChainName]: string;
-        };
-    };
-    protected _contracts: {
-        factory: {
-            [key in ChainName]?: Contract;
-        };
-        router: {
-            [key in ChainName]?: Contract;
-        };
-    };
-    get contractAddress(): {
-        [x: string]: string;
-    };
-    constructor(props: {
+    protected l3: Readonly<L3Chain>;
+    _chains: Record<ChainName, ChainComponent>;
+    constructor(l3: Readonly<L3Chain>, props: {
         generatedDatas: ExchangePairMetadata[];
-        l3chain: L3Chain;
-        graphQL: {
-            [key in ChainName]: string;
-        };
-        providers: {
-            [key in ChainName]: provider;
-        };
-        addresses: {
-            factory: {
-                [key in ChainName]: string;
-            };
-            router: {
-                [key in ChainName]: string;
-            };
-        };
+        chains: Record<ChainName, {
+            provider: provider;
+            graphURL: string;
+            factoryAddress: string;
+            routerAddress: string;
+        }>;
     });
+    getCompments: (chainName: ChainName) => ChainComponent;
     /**
      * 获取基础手续费
      *
@@ -70,7 +45,7 @@ export declare class ExchangeRouter {
      * @returns rateWei 全精度数值(1e12 = 100%)
      * @returns rate 百分比
      */
-    feeAdditionalOf: (pair: ExchangePair) => Promise<{
+    feeAdditionalOf: (pairOrETID: ExchangePair | ExchangeTokenID) => Promise<{
         thresholdAmount: string | number | BN;
         rateWei: BN;
         rate: number;
@@ -103,7 +78,7 @@ export declare class ExchangeRouter {
     }[]>;
     /**
      * 查询历史记录:
-     * 不能混合查询，一次智能查询一个网络中的数据，并不完全是GraphQL的数据，会对最终数据做一些可读性的转换一笔成功的跨
+     * 不能混合查询，一次只能查询一个网络中的数据，并不完全是GraphQL的数据，会对最终数据做一些可读性的转换一笔成功的跨
      * 网络代币交换逻辑，应该由A存B取组成，但是在各种限制条件下，暂时没有找到好的办法解决不同网络之间两个交易记录的关联
      * 问题，所以在查询交易的状态时候，可以很容易查到A存没存，B取没取，但是在AB之间关联上，存在较多障碍，无法直接在一个
      * 接口中给出。
@@ -145,7 +120,7 @@ export declare class ExchangeRouter {
      *
      * @param account
      */
-    getBorrowAmountsOf: (fromChain: ChainName, filter: {
+    selectBorrowAmountsOf: (fromChain: ChainName, filter: {
         skip?: number | undefined;
         first: number;
         where?: {
@@ -162,7 +137,10 @@ export declare class ExchangeRouter {
      *
      * @param pair
      */
-    selectBadExchange: (pair: ExchangePair) => Promise<ExchangeHistory[]>;
+    selectBadExchange: (pair: ExchangePair, filter?: {
+        skip: number;
+        first: number;
+    }) => Promise<ExchangeHistory[]>;
     /**
      * 获取存入类型历史记录的凭证信息，返回的信息可以用于其他成员网络的验证，返回的对象可以用于在目标网络进行提取操作
      *
@@ -170,4 +148,17 @@ export declare class ExchangeRouter {
      * @returns
      */
     getDepositedProof: (history: ExchangeHistory) => Promise<import("@l3chain/sdk").TransactionProof>;
+    estimateFee: (props: {
+        fromETID: ExchangeTokenID;
+        toETID: ExchangeTokenID;
+        fromAccount: string;
+        toAccount: string;
+        amount: BN | string | number;
+    }) => Promise<{
+        feeAmount: BN;
+        feeAdditionalAmount: BN;
+        feel3: BN;
+    }>;
+    createBuidler: (fromChain: ChainName, fromAccount: string) => ExchangeTransactionBuilder;
 }
+export {};

@@ -1,56 +1,64 @@
 import Web3 from 'web3';
 import BN from 'bn.js';
 
-import { toNumber, fromWei, toBN } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
+import { toNumber, fromWei, toBN } from 'web3-utils';
 import { provider } from 'web3-core';
-import { L3Chain, ChainIdentifier, ChainIdentifiers, ChainName, ChainNameFromIdentifier, ChainNames, GraphQlClient } from '@l3chain/sdk';
-import { ExchangePair } from './exchange-pair';
-import { ExchangePairMetadata, ExchangeHistory, CertificateState, NullableAddress } from "./entity";
-import { ABI } from './abi';
+import { L3Chain, ChainIdentifier, ChainIdentifiers, ChainName, ChainNames, GraphQlClient, L3Provider } from '@l3chain/sdk';
 
+import { ABI } from './abi';
+import { ExchangePair } from './exchange-pair';
+import { ExchangePairMetadata, ExchangeHistory, CertificateState, NullableAddress, ExchangeTokenID } from "./entity";
+import { ExchangeTransactionBuilder } from './exchange-builder';
+
+type ChainComponent = {
+    web3: Web3,
+    client: GraphQlClient,
+    factory: Contract,
+    router: Contract,
+}
 
 export class ExchangeRouter {
     metaDatas: ExchangePairMetadata[];
-    protected _l3chain: L3Chain;
-    protected _web3s: { [key in ChainName]?: Web3 } = {}
-    protected _clients: { [key in ChainName]?: GraphQlClient } = {}
-    protected _addresses: {
-        factory: { [key in ChainName]: string },
-        router: { [key in ChainName]: string },
-    };
-    protected _contracts: {
-        factory: { [key in ChainName]?: Contract },
-        router: { [key in ChainName]?: Contract },
-    } = {
-            factory: {},
-            router: {}
-        }
 
-    get contractAddress() {
-        return this._addresses.router;
+    protected l3: Readonly<L3Chain>;
+
+    public _chains: Record<ChainName, ChainComponent>;
+
+    // get contractAddress() {
+    //     return Object.keys(this._chains).reduce((ret, chianName) => {
+    //         ret[chianName] = this._chains[chianName].
+    //     })
+    // }
+
+    constructor(l3: Readonly<L3Chain>, props: {
+        generatedDatas: ExchangePairMetadata[],
+        chains: Record<ChainName, {
+            provider: provider,
+            graphURL: string,
+            factoryAddress: string
+            routerAddress: string
+        }>
+    }) {
+        this.l3 = l3;
+        this.metaDatas = props.generatedDatas;
+
+        this._chains = ChainNames.reduce((ret, key) => {
+            let c = props.chains[key];
+            let web3 = new Web3(c.provider);
+            ret[key] = {
+                web3: web3,
+                client: new GraphQlClient(c.graphURL),
+                factory: new web3.eth.Contract(ABI.Factory, c.factoryAddress),
+                router: new web3.eth.Contract(ABI.Router, c.routerAddress),
+            }
+            return ret;
+
+        }, {} as Record<ChainName, ChainComponent>)
     }
 
-    constructor(props: {
-        generatedDatas: ExchangePairMetadata[],
-        l3chain: L3Chain,
-        graphQL: { [key in ChainName]: string },
-        providers: { [key in ChainName]: provider },
-        addresses: {
-            factory: { [key in ChainName]: string },
-            router: { [key in ChainName]: string },
-        }
-    }) {
-        const { generatedDatas, graphQL, providers, addresses, l3chain } = props;
-        this.metaDatas = generatedDatas;
-        this._addresses = addresses;
-        this._l3chain = l3chain;
-        for (let name of ChainNames) {
-            this._clients[name] = new GraphQlClient(graphQL[name as ChainName]);
-            this._web3s[name] = new Web3(providers[name as ChainName]);
-            this._contracts.factory[name] = new this._web3s[name]!.eth.Contract(ABI.Factory, addresses.factory[name])
-            this._contracts.router[name] = new this._web3s[name]!.eth.Contract(ABI.Router, addresses.router[name])
-        }
+    getCompments = (chainName: ChainName) => {
+        return this._chains[chainName];
     }
 
     /**
@@ -64,7 +72,7 @@ export class ExchangeRouter {
         token: string,
         amount: string | number | BN,
     }>((resolve, reject) => {
-        this._contracts.factory[chainName]!.methods
+        this._chains[chainName].factory.methods
             .fee()
             .call()
             .catch(reject)
@@ -82,13 +90,22 @@ export class ExchangeRouter {
      * @returns rateWei 全精度数值(1e12 = 100%)
      * @returns rate 百分比
      */
-    feeAdditionalOf = (pair: ExchangePair) => new Promise<{
+    feeAdditionalOf = (pairOrETID: ExchangePair | ExchangeTokenID) => new Promise<{
         thresholdAmount: string | number | BN,
         rateWei: BN,
         rate: number,
     }>((resolve) => {
-        this._contracts.factory[ChainNameFromIdentifier(pair.metaData.etid.chainIdentifier) as ChainName]!.methods
-            .feeAdditionalOf(pair.metaData.pairContract)
+
+        let args = pairOrETID instanceof ExchangePair ? {
+            chainIdentifier: pairOrETID.metaData.etid.chainIdentifier,
+            shadowEmiter: pairOrETID.metaData.pairContract
+        } : {
+            chainIdentifier: pairOrETID.chainIdentifier,
+            shadowEmiter: pairOrETID.shadowEmiter
+        }
+
+        this._chains[args.chainIdentifier.toChainName()].factory.methods
+            .feeAdditionalOf(args.shadowEmiter)
             .call()
             .then((result: any) => resolve({
                 thresholdAmount: result.thresholdAmount,
@@ -105,7 +122,7 @@ export class ExchangeRouter {
      */
     supportExchangePairs = (fromChain: ChainName) => this.metaDatas.filter(
         data => data.etid.chainIdentifier.toLowerCase() == ChainIdentifiers[fromChain].toLowerCase()
-    ).map(data => new ExchangePair(this._web3s[fromChain]!, data))
+    ).map(data => new ExchangePair(this._chains[fromChain].web3, data))
 
     /**
      * 获取对应网络的主币映射代币的Pair，不一定存在
@@ -114,7 +131,7 @@ export class ExchangeRouter {
      * @returns 
      */
     wrappedCoinPair = async (onChain: ChainName) => {
-        let wcoinAddress = await this._contracts.router[onChain]!.methods.WCOIN().call();
+        let wcoinAddress = await this._chains[onChain].router.methods.WCOIN().call();
 
         let wcoinData = this.metaDatas.find(data =>
             data.etid.chainIdentifier.toLowerCase() == ChainIdentifiers[onChain].toLowerCase() &&
@@ -125,7 +142,7 @@ export class ExchangeRouter {
             return undefined;
         }
 
-        return new ExchangePair(this._web3s[onChain]!, wcoinData!)
+        return new ExchangePair(this._chains[onChain].web3, wcoinData!)
     }
 
     selectBorrowHistory = async (onChain: ChainName, filter: {
@@ -149,7 +166,7 @@ export class ExchangeRouter {
             }
         }
         `
-        return await this._clients[onChain]!.query<{
+        return await this._chains[onChain].client.query<{
             borrowAmounts: {
                 borrower: string,
                 amount: string,
@@ -161,7 +178,7 @@ export class ExchangeRouter {
 
     /**
      * 查询历史记录:
-     * 不能混合查询，一次智能查询一个网络中的数据，并不完全是GraphQL的数据，会对最终数据做一些可读性的转换一笔成功的跨
+     * 不能混合查询，一次只能查询一个网络中的数据，并不完全是GraphQL的数据，会对最终数据做一些可读性的转换一笔成功的跨
      * 网络代币交换逻辑，应该由A存B取组成，但是在各种限制条件下，暂时没有找到好的办法解决不同网络之间两个交易记录的关联
      * 问题，所以在查询交易的状态时候，可以很容易查到A存没存，B取没取，但是在AB之间关联上，存在较多障碍，无法直接在一个
      * 接口中给出。
@@ -217,7 +234,7 @@ export class ExchangeRouter {
         }
         `
 
-        let exchangeds = await this._clients[fromChain]?.query<{
+        let exchangeds = await this._chains[fromChain].client.query<{
             exchangeds: {
                 id: string,
                 certificateId: string,
@@ -323,7 +340,7 @@ export class ExchangeRouter {
             // history.historyType == "Deposit";
             // 存入类型，需要去目标网络中查看凭证状态，存在凭证则视为成交
             let withdrawHistory = await this.selectExchangeHistory(
-                ChainNameFromIdentifier(history.to.chainIdentifier) as ChainName,
+                history.to.chainIdentifier.toChainName(),
                 {
                     first: 1,
                     where: {
@@ -353,7 +370,7 @@ export class ExchangeRouter {
      * 
      * @param account 
      */
-    getBorrowAmountsOf = (fromChain: ChainName, filter: {
+    selectBorrowAmountsOf = (fromChain: ChainName, filter: {
         skip?: number,
         first: number,
         where?: { [key: string]: any },
@@ -376,7 +393,7 @@ export class ExchangeRouter {
             }
         }
         `;
-        return this._clients[fromChain]!.query<{
+        return this._chains[fromChain].client.query<{
             borrowAmounts: {
                 amount: string,
                 borrower: string,
@@ -389,7 +406,7 @@ export class ExchangeRouter {
                 amount: toBN(borrowInfo.amount),
                 borrower: borrowInfo.borrower,
                 exchangePair: new ExchangePair(
-                    this._web3s[fromChain]!,
+                    this._chains[fromChain].web3,
                     this.metaDatas.find(value =>
                         value.etid.chainIdentifier.toLowerCase() == ChainIdentifiers[fromChain].toLowerCase() &&
                         value.pairContract.toLowerCase() == borrowInfo.pairContract.pairContract.toLowerCase()
@@ -406,33 +423,38 @@ export class ExchangeRouter {
      * 
      * @param pair 
      */
-    selectBadExchange = async (pair: ExchangePair) => {
+    selectBadExchange = async (pair: ExchangePair, filter: {
+        skip: number,
+        first: number
+    } = { skip: 0, first: 50 }) => {
         // 获取所有可以兑换到对应Pair的其他网络中的Pair
         let fromEtids = pair.fromExchangeTokenIds;
+
         // 获取所有网络中目标网络为当前Piar所在网络的交易记录
         let allHistory = await Promise.all(
             fromEtids.map(
                 fromEtid => this.selectExchangeHistory(
-                    ChainNameFromIdentifier(fromEtid.chainIdentifier) as ChainName,
+                    fromEtid.chainIdentifier.toChainName(),
                     {
-                        first: 100,
+                        ...filter,
                         orderBy: "time",
                         orderDirection: "asc",
                         where: {
                             fromETID_: {
-                                chainIdentifier: fromEtid.chainIdentifier
+                                chainIdentifier: fromEtid.chainIdentifier,
+                                shadowEmiter: fromEtid.shadowEmiter
                             },
                             toETID_: {
                                 chainIdentifier: pair.metaData.etid.chainIdentifier,
                                 shadowEmiter: pair.metaData.etid.shadowEmiter
                             },
-                            // time_gte: Math.round(new Date().getTime() / 1000) - 30 * 65,
-                            // time_lt: Math.round(new Date().getTime() / 1000) - 30 * 5
+                            time_gte: Math.round(new Date().getTime() / 1000) - 30 * 65,
+                            time_lt: Math.round(new Date().getTime() / 1000) - 30 * 5
                         }
                     }
                 ).then((history) => {
                     return this.selectExchangeHistory(
-                        ChainNameFromIdentifier(pair.metaData.etid.chainIdentifier) as ChainName,
+                        pair.metaData.etid.chainIdentifier.toChainName(),
                         {
                             first: history.length,
                             where: {
@@ -450,7 +472,12 @@ export class ExchangeRouter {
                 })
             )
         )
-        return allHistory.flat()
+
+        let flated: ExchangeHistory[] = [];
+        for (let a of allHistory) {
+            flated = flated.concat(a)
+        }
+        return flated;
     }
 
     /**
@@ -459,9 +486,45 @@ export class ExchangeRouter {
      * @param history 
      * @returns 
      */
-    getDepositedProof = (history: ExchangeHistory) => this._l3chain.createL3TransactionProof(
-        ChainNameFromIdentifier(history.from.chainIdentifier) as ChainName,
+    getDepositedProof = (history: ExchangeHistory) => this.l3.createL3TransactionProof(
+        history.from.chainIdentifier.toChainName(),
         history.id.split('-')[0],
         parseInt(history.id.split('-')[1] as string) - 1
     );
+
+    estimateFee = (
+        props: {
+            fromETID: ExchangeTokenID,
+            toETID: ExchangeTokenID,
+            fromAccount: string,
+            toAccount: string,
+            amount: BN | string | number
+        }
+    ) => {
+        let { fromETID, toETID, fromAccount, toAccount, amount } = props;
+
+        return this._chains[fromETID.chainIdentifier.toChainName()].router.methods.tokenExchangeToChainEstimateFee(
+            fromETID,
+            toETID,
+            toAccount,
+            amount
+        ).call().then((ret: any) => {
+            return {
+                feeAmount: toBN(ret.feeAmount),
+                feeAdditionalAmount: toBN(ret.feeAdditionalAmount),
+                feel3: toBN(ret.feel3)
+            }
+        }) as Promise<{
+            feeAmount: BN,
+            feeAdditionalAmount: BN,
+            feel3: BN
+        }>
+    }
+
+    createBuidler = (fromChain: ChainName, fromAccount: string) => {
+        return new ExchangeTransactionBuilder(this, {
+            fromChain,
+            fromAccount
+        });
+    }
 }

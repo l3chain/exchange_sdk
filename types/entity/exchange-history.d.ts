@@ -1,3 +1,4 @@
+import { ChainIdentifier } from '@l3chain/sdk';
 import BN from 'bn.js';
 export declare const NullableAddress = "0x0000000000000000000000000000000000000000";
 export type CertificateState = "Unused" | "ExchangedDone" | "BadHandlerDone" | "BorrowAmountDone";
@@ -7,14 +8,14 @@ export type CertificateState = "Unused" | "ExchangedDone" | "BadHandlerDone" | "
  */
 export type ExchangeHistory = {
     id: string;
-    emitChainIdentifier: string;
+    emitChainIdentifier: ChainIdentifier;
     emitPair: string;
     certificateId: number;
     historyType: "Deposit" | "Withdraw";
     time: number;
     assetProvider: string;
     from: {
-        chainIdentifier: string;
+        chainIdentifier: ChainIdentifier;
         account: string;
         tokenPair: string;
         tokenAddress: string;
@@ -23,7 +24,7 @@ export type ExchangeHistory = {
         tokenDecimals: number;
     };
     to: {
-        chainIdentifier: string;
+        chainIdentifier: ChainIdentifier;
         account: string;
         tokenPair: string;
         tokenAddress: string;

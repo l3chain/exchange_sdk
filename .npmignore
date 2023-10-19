@@ -1,0 +1,8 @@
+src/
+test/
+config/
+tsconfig.json
+yarn.lock
+example/
+BadDebtAPI.md
+HistoryInfomation.md
