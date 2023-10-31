@@ -54,7 +54,12 @@ export class ExchangePair {
 
     l3Nonce = (): number => this.contract.methods.l3Nonce().call().then(toNumber);
 
+    /**
+     * @deprecated use 'tokenBalanceReserve'
+     */
     tokenBalnaceReserver = (): Promise<BN> => this.contract.methods.tokenBalnaceReserver().call().then(toBN);
+
+    tokenBalanceReserve = (): Promise<BN> => this.contract.methods.tokenBalnaceReserver().call().then(toBN);
 
     borrowAmountOf = (account: string): Promise<BN> => this.contract.methods.borrowAmountOf(account).call().then(toBN);
 

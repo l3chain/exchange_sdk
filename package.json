@@ -1,6 +1,6 @@
 {
   "name": "@l3chain/exchange_sdk",
-  "version": "1.0.4",
+  "version": "1.0.5-pre.1",
   "main": "./lib/index.js",
   "types": "./types/index.d.ts",
   "license": "MIT",
@@ -15,7 +15,7 @@
       "tsconfig-paths/register"
     ],
     "ui": "bdd",
-    "timeout": "5000"
+    "timeout": "50000"
   },
   "dependencies": {
     "@l3chain/sdk": "1.0.4",

@@ -228,17 +228,18 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@l3chain/sdk@github:l3chain/sdk":
-  version "1.0.1"
-  resolved "https://codeload.github.com/l3chain/sdk/tar.gz/a0aa60f14b9a469b28b638ba4fa404da0f369e40"
+"@l3chain/exchange_sdk@file:..":
+  version "1.0.5-pre.0"
   dependencies:
-    merkletreejs "0.3.9"
+    "@l3chain/sdk" "1.0.4"
     web3 "1.8.2"
 
-"@l3exchange/sdk@file:..":
-  version "1.0.1"
+"@l3chain/sdk@1.0.4":
+  version "1.0.4"
+  resolved "https://npm.pkg.github.com/download/@l3chain/sdk/1.0.4/667404f109033f25a553f92b026fa9b8ff4196de#667404f109033f25a553f92b026fa9b8ff4196de"
+  integrity sha512-gecrhhx8WkYyU95LFWS0AqfUtyKhUfQWylJFS2rUtL9ZHlGpBpaET31ozNsi4n4qD/rcd8vjtrfvrZ9Al3fYnw==
   dependencies:
-    "@l3chain/sdk" "github:l3chain/sdk"
+    merkletreejs "0.3.9"
     web3 "1.8.2"
 
 "@sindresorhus/is@^4.0.0", "@sindresorhus/is@^4.6.0":

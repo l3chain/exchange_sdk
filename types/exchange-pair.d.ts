@@ -23,7 +23,11 @@ export declare class ExchangePair {
     get fromExchangeTokenIds(): ExchangeTokenID[];
     get etid(): ExchangeTokenID;
     l3Nonce: () => number;
+    /**
+     * @deprecated use 'tokenBalanceReserve'
+     */
     tokenBalnaceReserver: () => Promise<BN>;
+    tokenBalanceReserve: () => Promise<BN>;
     borrowAmountOf: (account: string) => Promise<BN>;
     isDestroyCertificateIdOf: (fromChainIdentifier: string, fromPairAddress: string, certificateId: number) => any;
     exchangeToEstimateFee: (etid: ExchangeTokenID, fromAccount: string, toAccount: string, amount: string | number | BN) => Promise<{

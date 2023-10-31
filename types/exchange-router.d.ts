@@ -25,15 +25,16 @@ export declare class ExchangeRouter {
             routerAddress: string;
         }>;
     });
-    getCompments: (chainName: ChainName) => ChainComponent;
+    getComponents: (chainName: ChainName) => ChainComponent;
     /**
      * 获取基础手续费
      *
      * @param chainName
      * @returns token 基础手续费代币
      * @returns amount 手续费数量
+     *
      */
-    fee: (chainName: ChainName) => Promise<{
+    getBaseFee: (chainName: ChainName) => Promise<{
         token: string;
         amount: string | number | BN;
     }>;
@@ -45,7 +46,7 @@ export declare class ExchangeRouter {
      * @returns rateWei 全精度数值(1e12 = 100%)
      * @returns rate 百分比
      */
-    feeAdditionalOf: (pairOrETID: ExchangePair | ExchangeTokenID) => Promise<{
+    getFeeAdditionalOf: (pairOrETID: ExchangePair | ExchangeTokenID) => Promise<{
         thresholdAmount: string | number | BN;
         rateWei: BN;
         rate: number;
@@ -56,14 +57,14 @@ export declare class ExchangeRouter {
      * @param chainName
      * @returns
      */
-    supportExchangePairs: (fromChain: ChainName) => ExchangePair[];
+    getSupportExchangePairs: (fromChain: ChainName) => ExchangePair[];
     /**
      * 获取对应网络的主币映射代币的Pair，不一定存在
      *
      * @param onChain
      * @returns
      */
-    wrappedCoinPair: (onChain: ChainName) => Promise<ExchangePair | undefined>;
+    getWrappedCoinPair: (onChain: ChainName) => Promise<ExchangePair | undefined>;
     selectBorrowHistory: (onChain: ChainName, filter: {
         skip?: number | undefined;
         first: number;
@@ -147,7 +148,49 @@ export declare class ExchangeRouter {
      * @param history
      * @returns
      */
-    getDepositedProof: (history: ExchangeHistory) => Promise<import("@l3chain/sdk").TransactionProof>;
+    createExchangeProof: (history: ExchangeHistory) => Promise<import("@l3chain/sdk").TransactionProof>;
+    getEstimateFee: (props: {
+        fromETID: ExchangeTokenID;
+        toETID: ExchangeTokenID;
+        fromAccount: string;
+        toAccount: string;
+        amount: BN | string | number;
+    }) => Promise<{
+        feeAmount: BN;
+        feeAdditionalAmount: BN;
+        feel3: BN;
+    }>;
+    createExchangeBuilder: (fromChain: ChainName, fromAccount: string) => ExchangeTransactionBuilder;
+    /**
+     * @deprecated use 'getComponents'
+     */
+    getCompments: typeof this.getComponents;
+    /**
+     * @deprecated use 'getBaseFee'
+     */
+    fee: (chainName: ChainName) => Promise<{
+        token: string;
+        amount: string | number | BN;
+    }>;
+    /**
+     * @deprecated use 'getFeeAdditionalOf'
+     */
+    feeAdditionalOf: (pairOrETID: ExchangePair | ExchangeTokenID) => Promise<{
+        thresholdAmount: string | number | BN;
+        rateWei: BN;
+        rate: number;
+    }>;
+    /**
+     * @deprecated use 'getSupportExchangePairs'
+     */
+    supportExchangePairs: (fromChain: ChainName) => ExchangePair[];
+    /**
+     * @deprecated use 'getWrappedCoinPair'
+     */
+    wrappedCoinPair: (onChain: ChainName) => Promise<ExchangePair | undefined>;
+    /**
+     * @deprecated use 'getEstimateFee'
+     */
     estimateFee: (props: {
         fromETID: ExchangeTokenID;
         toETID: ExchangeTokenID;
@@ -159,6 +202,9 @@ export declare class ExchangeRouter {
         feeAdditionalAmount: BN;
         feel3: BN;
     }>;
-    createBuidler: (fromChain: ChainName, fromAccount: string) => ExchangeTransactionBuilder;
+    /**
+     * @deprecated use 'createExchangeProof'
+     */
+    getDepositedProof: (history: ExchangeHistory) => Promise<import("@l3chain/sdk").TransactionProof>;
 }
 export {};

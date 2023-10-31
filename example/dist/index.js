@@ -25,7 +25,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -50,151 +50,81 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var web3_1 = __importDefault(require("web3"));
 var sdk_1 = require("@l3chain/sdk");
 var sdk_2 = require("@l3exchange/sdk");
-var web3_utils_1 = require("web3-utils");
-var web3_1 = __importDefault(require("web3"));
 var config = {
-    graphQL: {
-        HOST: 'http://l3test.org:8000/subgraphs/name/l3/exchange_host',
-        BSC: 'http://l3test.org:8000/subgraphs/name/l3/exchange_bsc'
-    },
-    providers: {
-        HOST: 'http://l3test.org:18545',
-        BSC: 'http://l3test.org:38545',
-    },
-    addresses: {
-        factory: {
-            HOST: '0x20F611104239191dEaad083a8ED28ec8109C47EB',
-            BSC: '0x20F611104239191dEaad083a8ED28ec8109C47EB'
-        },
-        router: {
-            HOST: '0x19641d3a92E85aF17447ce29367723cc85156d86',
-            BSC: '0x19641d3a92E85aF17447ce29367723cc85156d86'
-        }
-    }
-};
-var ChainIdentifierFromChainId = function (chainId) {
-    // 测试环境
-    return {
-        "38545": "0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494",
-        "18545": "0x0000000000000000000000000000000000000000000000000000000000000000"
-    }[chainId.toString()];
-    // 产品环境
-    return {
-        "56": "0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494",
-        "1": "0x0000000000000000000000000000000000000000000000000000000000000000"
-    }[chainId.toString()];
-};
-var l3 = new sdk_1.L3Chain({
     HOST: {
-        web3Provider: new web3_1.default.providers.HttpProvider(config.providers.HOST),
-        chainIdentifier: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e",
-        graphDataBaseHost: "http://l3test.org:8000/subgraphs/name/l3chain/host_database"
+        provider: "http://l3test.org:18545",
+        graphURL: "http://l3test.org:8000/subgraphs/name/l3/exchange_host",
+        factoryAddress: "0xd84dA80c18A046036a35c99a807bAE27C5FD25e0",
+        routerAddress: "0x8142FE663fE28E7aEd9B859C0475C8ef7F3C5539"
+    },
+    ETH: {
+        provider: "http://l3test.org:28545",
+        graphURL: "http://l3test.org:8000/subgraphs/name/l3/exchange_eth",
+        factoryAddress: "0xd84dA80c18A046036a35c99a807bAE27C5FD25e0",
+        routerAddress: "0x8142FE663fE28E7aEd9B859C0475C8ef7F3C5539"
     },
     BSC: {
-        web3Provider: new web3_1.default.providers.HttpProvider(config.providers.BSC),
-        chainIdentifier: "0xe1430158eac8c4aa6a515be5ef2c576a7a9559adbd0c276cd9573854e0473494",
-        contractAddress: "0xf135b82D34058aE35d3c537a2EfB83462d4ee76e"
-    },
+        provider: "http://l3test.org:38545",
+        graphURL: "http://l3test.org:8000/subgraphs/name/l3/exchange_bsc",
+        factoryAddress: "0xd84dA80c18A046036a35c99a807bAE27C5FD25e0",
+        routerAddress: "0x8142FE663fE28E7aEd9B859C0475C8ef7F3C5539"
+    }
+};
+var l3 = new sdk_1.L3Chain({
+    graphDataBaseHost: "http://l3test.org:8000/subgraphs/name/l3chain/host_database",
+    providers: {
+        HOST: {
+            web3Provider: new web3_1.default.providers.HttpProvider(config.HOST.provider),
+            contractAddress: "0xd84dA80c18A046036a35c99a807bAE27C5FD25e0",
+        },
+        ETH: {
+            web3Provider: new web3_1.default.providers.HttpProvider(config.ETH.provider),
+            contractAddress: "0xd84dA80c18A046036a35c99a807bAE27C5FD25e0",
+        },
+        BSC: {
+            web3Provider: new web3_1.default.providers.HttpProvider(config.BSC.provider),
+            contractAddress: "0xd84dA80c18A046036a35c99a807bAE27C5FD25e0"
+        },
+    }
 });
-// 这里使用测试节点，测试节点上所有的账户都是解锁的，在实际使用中，请注意使用window.ethereum中的provider来接入MetaMask或者其他钱包插件
-var injectionWeb3 = new web3_1.default(new web3_1.default.providers.HttpProvider('http://l3test.org:18545'));
-injectionWeb3.eth.getAccounts().then(function (accounts) { return __awaiter(void 0, void 0, void 0, function () {
-    var exchangePairs, router, hostPairs, usePair, targetEtid, targetPairs, fees, fromTokenContract, routerSender, txSender, callret, gas, exchangeHistory, _i, exchangeHistory_1, record, infos, _a, _b;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
-            case 0: return [4 /*yield*/, sdk_2.ExchangePairsGenerater(config)];
-            case 1:
-                exchangePairs = _c.sent();
-                console.log(exchangePairs);
-                router = new sdk_2.ExchangeRouter(__assign(__assign({}, config), { l3chain: l3, generatedDatas: exchangePairs }));
-                hostPairs = router.supportExchangePairs('HOST');
-                usePair = hostPairs[0];
-                targetEtid = usePair.toExchangeTokenIds[0];
-                targetPairs = usePair.toExchangeTokenIds.map(function (toETID) {
-                    return exchangePairs.find(function (e) {
-                        return e.etid.chainIdentifier == toETID.chainIdentifier &&
-                            e.etid.shadowEmiter == toETID.shadowEmiter &&
-                            e.etid.tokenContract == toETID.tokenContract;
-                    });
-                });
-                return [4 /*yield*/, usePair.exchangeToEstimateFee(targetEtid, accounts[0], accounts[8], web3_utils_1.toBN(10).mul(web3_utils_1.toBN(1e7)))];
-            case 2:
-                fees = _c.sent();
-                fromTokenContract = new injectionWeb3.eth.Contract(sdk_2.ABI.ERC20, usePair.metaData.tokenAddress);
-                ////////////////////////////////////////////////////////////////////////////////////
-                ////////////////////////////////////////////////////////////////////////////////////
-                // 完成授权操作
-                return [4 /*yield*/, fromTokenContract.methods.approve(router.contractAddress.HOST, injectionWeb3.utils.toWei('10000000')).send({
-                        from: accounts[0],
-                    }).then(function () {
-                        console.log("Approve Router Successed");
-                    })
-                    ////////////////////////////////////////////////////////////////////////////////////
-                    ////////////////////////////////////////////////////////////////////////////////////
-                    // 发起交易,建立Router的合约交互实例
-                ];
-            case 3:
-                ////////////////////////////////////////////////////////////////////////////////////
-                ////////////////////////////////////////////////////////////////////////////////////
-                // 完成授权操作
-                _c.sent();
-                routerSender = new injectionWeb3.eth.Contract(sdk_2.ABI.Router, router.contractAddress.HOST);
-                txSender = routerSender.methods.tokenExchangeToChain(usePair.metaData.etid, targetEtid, accounts[8], web3_utils_1.toBN(10).mul(web3_utils_1.toBN(1e7)));
-                return [4 /*yield*/, txSender.call({
-                        from: accounts[0],
-                        value: web3_utils_1.toBN(fees.feeAmount.toString()).add(web3_utils_1.toBN(fees.feel3.toString())).add(web3_utils_1.toBN(web3_utils_1.toWei("1")))
-                    })];
-            case 4:
-                callret = _c.sent();
-                console.log("tokenExchangeToChain call: " + callret.toString());
-                return [4 /*yield*/, txSender.estimateGas({
-                        from: accounts[0],
-                        value: web3_utils_1.toBN(fees.feeAmount.toString()).add(web3_utils_1.toBN(fees.feel3.toString())).add(web3_utils_1.toBN(web3_utils_1.toWei("1")))
-                    })];
-            case 5:
-                gas = _c.sent();
-                console.log("tokenExchangeToChain gas: " + gas);
-                // return;
-                return [4 /*yield*/, txSender.send({
-                        from: accounts[0],
-                        gas: gas,
-                        value: web3_utils_1.toBN(fees.feeAmount.toString()).add(web3_utils_1.toBN(fees.feel3.toString()))
-                    }).then(console.log)];
-            case 6:
-                // return;
-                _c.sent();
-                return [2 /*return*/];
-            case 7:
-                exchangeHistory = _c.sent();
-                console.log(exchangeHistory);
-                _i = 0, exchangeHistory_1 = exchangeHistory;
-                _c.label = 8;
-            case 8:
-                if (!(_i < exchangeHistory_1.length)) return [3 /*break*/, 11];
-                record = exchangeHistory_1[_i];
-                _a = [sdk_1.ChainNameFromIdentifier(record.from.chainIdentifier) + "-" + record.from.tokenSymbol,
-                    '/',
-                    sdk_1.ChainNameFromIdentifier(record.to.chainIdentifier) + "-" + record.to.tokenSymbol,
-                    " ",
-                    record.from.account,
-                    " -> ",
-                    record.to.account,
-                    " : " + web3_utils_1.fromWei(record.amount)];
-                _b = " (";
-                return [4 /*yield*/, router.getExchangeHistoryState(record)];
-            case 9:
-                infos = _a.concat([
-                    _b + (_c.sent()).toString() + ")"
-                ]);
-                console.log(infos.join(''));
-                _c.label = 10;
-            case 10:
-                _i++;
-                return [3 /*break*/, 8];
-            case 11: return [2 /*return*/];
-        }
+// 获取当前所有支持的资产元数据，改方法返回的metaDatas可以保存为一个json，当资产列表更新不频繁时，可以采取静态文件保存的形式保存
+// 方便在后续创建ExchangeRouter对象时候，直接载入，来提高初始化的速度，当元数据数据量较大时候，效率会有明显的提升。
+function fetchMetaDatas() {
+    return __awaiter(this, void 0, void 0, function () {
+        var metaDatas;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, (0, sdk_2.ExchangePairsGenerater)(Object.keys(config).reduce(function (ret, chainName) {
+                        ret[chainName] = config[chainName].graphURL;
+                        return ret;
+                    }, {}))];
+                case 1:
+                    metaDatas = _a.sent();
+                    console.log(JSON.stringify(metaDatas));
+                    return [2 /*return*/, metaDatas];
+            }
+        });
     });
-}); });
+}
+function createExchangeRouter() {
+    return __awaiter(this, void 0, void 0, function () {
+        var metaDatas;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, fetchMetaDatas()];
+                case 1:
+                    metaDatas = _a.sent();
+                    return [2 /*return*/, new sdk_2.ExchangeRouter(l3, {
+                            generatedDatas: metaDatas,
+                            chains: __assign({}, config)
+                        })];
+            }
+        });
+    });
+}
+createExchangeRouter().then(function (router) {
+    // ...
+});

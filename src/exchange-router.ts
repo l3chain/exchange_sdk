@@ -3,13 +3,14 @@ import BN from 'bn.js';
 
 import { Contract } from 'web3-eth-contract';
 import { toNumber, fromWei, toBN } from 'web3-utils';
-import { provider } from 'web3-core';
+import { provider, HttpProvider, IpcProvider, WebsocketProvider } from 'web3-core';
 import { L3Chain, ChainIdentifier, ChainIdentifiers, ChainName, ChainNames, GraphQlClient, L3Provider } from '@l3chain/sdk';
 
 import { ABI } from './abi';
 import { ExchangePair } from './exchange-pair';
 import { ExchangePairMetadata, ExchangeHistory, CertificateState, NullableAddress, ExchangeTokenID } from "./entity";
 import { ExchangeTransactionBuilder } from './exchange-builder';
+import { ExchangePairsGenerater } from './generater';
 
 type ChainComponent = {
     web3: Web3,
@@ -17,6 +18,15 @@ type ChainComponent = {
     factory: Contract,
     router: Contract,
 }
+
+// export type RouterProvider = { graphDataBaseHost: string } & Record<ChainName, {
+//     provider: string,
+//     graphURL: string,
+//     factoryAddress: string,
+//     routerAddress: string,
+//     l3Address: string
+//     web3Provider?: HttpProvider | IpcProvider | WebsocketProvider
+// }>
 
 export class ExchangeRouter {
     metaDatas: ExchangePairMetadata[];
@@ -57,7 +67,7 @@ export class ExchangeRouter {
         }, {} as Record<ChainName, ChainComponent>)
     }
 
-    getCompments = (chainName: ChainName) => {
+    getComponents = (chainName: ChainName) => {
         return this._chains[chainName];
     }
 
@@ -67,8 +77,9 @@ export class ExchangeRouter {
      * @param chainName 
      * @returns token 基础手续费代币
      * @returns amount 手续费数量
+     * 
      */
-    fee = (chainName: ChainName) => new Promise<{
+    getBaseFee = (chainName: ChainName) => new Promise<{
         token: string,
         amount: string | number | BN,
     }>((resolve, reject) => {
@@ -90,7 +101,7 @@ export class ExchangeRouter {
      * @returns rateWei 全精度数值(1e12 = 100%)
      * @returns rate 百分比
      */
-    feeAdditionalOf = (pairOrETID: ExchangePair | ExchangeTokenID) => new Promise<{
+    getFeeAdditionalOf = (pairOrETID: ExchangePair | ExchangeTokenID) => new Promise<{
         thresholdAmount: string | number | BN,
         rateWei: BN,
         rate: number,
@@ -120,7 +131,7 @@ export class ExchangeRouter {
      * @param chainName 
      * @returns 
      */
-    supportExchangePairs = (fromChain: ChainName) => this.metaDatas.filter(
+    getSupportExchangePairs = (fromChain: ChainName) => this.metaDatas.filter(
         data => data.etid.chainIdentifier.toLowerCase() == ChainIdentifiers[fromChain].toLowerCase()
     ).map(data => new ExchangePair(this._chains[fromChain].web3, data))
 
@@ -130,7 +141,7 @@ export class ExchangeRouter {
      * @param onChain 
      * @returns 
      */
-    wrappedCoinPair = async (onChain: ChainName) => {
+    getWrappedCoinPair = async (onChain: ChainName) => {
         let wcoinAddress = await this._chains[onChain].router.methods.WCOIN().call();
 
         let wcoinData = this.metaDatas.find(data =>
@@ -486,13 +497,13 @@ export class ExchangeRouter {
      * @param history 
      * @returns 
      */
-    getDepositedProof = (history: ExchangeHistory) => this.l3.createL3TransactionProof(
+    createExchangeProof = (history: ExchangeHistory) => this.l3.createL3TransactionProof(
         history.from.chainIdentifier.toChainName(),
         history.id.split('-')[0],
         parseInt(history.id.split('-')[1] as string) - 1
     );
 
-    estimateFee = (
+    getEstimateFee = (
         props: {
             fromETID: ExchangeTokenID,
             toETID: ExchangeTokenID,
@@ -521,10 +532,45 @@ export class ExchangeRouter {
         }>
     }
 
-    createBuidler = (fromChain: ChainName, fromAccount: string) => {
+    createExchangeBuilder = (fromChain: ChainName, fromAccount: string) => {
         return new ExchangeTransactionBuilder(this, {
             fromChain,
             fromAccount
         });
     }
+
+    /**
+     * @deprecated use 'getComponents'
+     */
+    getCompments: typeof this.getComponents = this.getComponents
+
+    /**
+     * @deprecated use 'getBaseFee'
+     */
+    fee = this.getBaseFee
+
+    /**
+     * @deprecated use 'getFeeAdditionalOf'
+     */
+    feeAdditionalOf = this.getFeeAdditionalOf
+
+    /**
+     * @deprecated use 'getSupportExchangePairs'
+     */
+    supportExchangePairs = this.getSupportExchangePairs
+
+    /**
+     * @deprecated use 'getWrappedCoinPair'
+     */
+    wrappedCoinPair = this.getWrappedCoinPair
+
+    /**
+     * @deprecated use 'getEstimateFee'
+     */
+    estimateFee = this.getEstimateFee
+
+    /**
+     * @deprecated use 'createExchangeProof'
+     */
+    getDepositedProof = this.createExchangeProof
 }
