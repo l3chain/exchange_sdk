@@ -50,8 +50,6 @@ async function fetchMetaDatas() {
         return ret;
     }, {} as Record<ChainName, string>))
 
-    console.log(JSON.stringify(metaDatas))
-
     return metaDatas;
 }
 
@@ -63,46 +61,70 @@ async function createExchangeRouter() {
     });
 }
 
+// createExchangeRouter().then(async router => {
+
+//     let web3 = router.getComponents("BSC").web3;
+//     let accounts = await web3.eth.getAccounts();
+
+//     let fromPair = router.getSupportExchangePairs("BSC")[0];
+//     let targetETID = fromPair.toExchangeTokenIds[0];
+
+//     let builder = await router.createExchangeBuilder('BSC', accounts[0])
+//         .on('feeAdditionalConfig', (fees) => {
+
+//         })
+//         .on('error', (e) => {
+
+//         })
+//         .on('feeAmountUpgrade', (fees) => {
+
+//         })
+//         .setFromETID(fromPair.etid)
+//         .setToETID(targetETID)
+//         .setToAccount(accounts[0])
+//         .setAmount(toWei('100'))
+
+//     let sender = builder.build(web3.currentProvider)
+//     let tx = await sender
+//         .on('approved', (tx) => {
+
+//         })
+//         .on('estimateGas', (gas) => {
+
+//         })
+//         .on('transactionHash', (txHash) => {
+
+//         })
+//         .on('receipt', (receipt) => {
+
+//         })
+//         .on('error', (error) => {
+
+//         })
+//         .send()
+// })
+
+
 createExchangeRouter().then(async router => {
 
-    let web3 = router.getComponents("BSC").web3;
+    let web3 = router.getComponents("ETH").web3;
     let accounts = await web3.eth.getAccounts();
 
-    let fromPair = router.getSupportExchangePairs("BSC")[0];
-    let targetETID = fromPair.toExchangeTokenIds[0];
+    let badPair = router.getSupportExchangePairs("ETH").find(p => p.metaData.tokenName === "D6T");
 
-    let builder = await router.createExchangeBuilder('BSC', accounts[0])
-        .on('feeAdditionalConfig', (fees) => {
+    await badPair?.depositBorrowAmount(web3.utils.toWei('1', 'gwei'), {
+        signerProvider: web3.currentProvider,
+        from: accounts[0]
+    });
 
-        })
-        .on('error', (e) => {
+    let borrowAmount = await badPair?.borrowAmountOf(accounts[0]);
 
-        })
-        .on('feeAmountUpgrade', (fees) => {
+    console.log(`BorrowAmount: ${web3.utils.fromWei(borrowAmount!, 'gwei')}`)
 
-        })
-        .setFromETID(fromPair.etid)
-        .setToETID(targetETID)
-        .setToAccount(accounts[0])
-        .setAmount(toWei('100'))
+    // handlePair?.exchangeFromProofsWithAddLiquidity()
 
-    let sender = builder.build(web3.currentProvider)
-    let tx = await sender
-        .on('approved', (tx) => {
+    // console.log(badExchanges)
 
-        })
-        .on('estimateGas', (gas) => {
-
-        })
-        .on('transactionHash', (txHash) => {
-
-        })
-        .on('receipt', (receipt) => {
-
-        })
-        .on('error', (error) => {
-
-        })
-        .send()
-
+    // let fromPair = router.getSupportExchangePairs("BSC")[0];
+    // let targetETID = fromPair.toExchangeTokenIds[0];
 })

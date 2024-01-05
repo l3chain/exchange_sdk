@@ -26,6 +26,7 @@ export declare class ExchangeRouter {
         }>;
     });
     getComponents: (chainName: ChainName) => ChainComponent;
+    getPair: (chainName: ChainName, tokenContract: string) => ExchangePair | undefined;
     /**
      * 获取基础手续费
      *
@@ -65,18 +66,6 @@ export declare class ExchangeRouter {
      * @returns
      */
     getWrappedCoinPair: (onChain: ChainName) => Promise<ExchangePair | undefined>;
-    selectBorrowHistory: (onChain: ChainName, filter: {
-        skip?: number | undefined;
-        first: number;
-        where?: {
-            [key: string]: any;
-        } | undefined;
-        orderDirection?: "asc" | "desc" | undefined;
-        orderBy?: string | undefined;
-    }) => Promise<{
-        borrower: string;
-        amount: string;
-    }[]>;
     /**
      * 查询历史记录:
      * 不能混合查询，一次只能查询一个网络中的数据，并不完全是GraphQL的数据，会对最终数据做一些可读性的转换一笔成功的跨
@@ -121,14 +110,15 @@ export declare class ExchangeRouter {
      *
      * @param account
      */
-    selectBorrowAmountsOf: (fromChain: ChainName, filter: {
+    selectBorrowAmounts: (fromChain: ChainName, filter: {
         skip?: number | undefined;
-        first: number;
+        first?: number | undefined;
         where?: {
             [key: string]: any;
         } | undefined;
     }) => Promise<{
         amount: BN;
+        borrower: string;
         exchangePair: ExchangePair;
     }[]>;
     /**
@@ -162,18 +152,24 @@ export declare class ExchangeRouter {
     }>;
     createExchangeBuilder: (fromChain: ChainName, fromAccount: string) => ExchangeTransactionBuilder;
     /**
-     * @deprecated use 'getComponents'
+     * @deprecated
+     *
+     * use 'getComponents'
      */
     getCompments: typeof this.getComponents;
     /**
-     * @deprecated use 'getBaseFee'
+     * @deprecated
+     *
+     * use 'getBaseFee'
      */
     fee: (chainName: ChainName) => Promise<{
         token: string;
         amount: string | number | BN;
     }>;
     /**
-     * @deprecated use 'getFeeAdditionalOf'
+     * @deprecated
+     *
+     * use 'getFeeAdditionalOf'
      */
     feeAdditionalOf: (pairOrETID: ExchangePair | ExchangeTokenID) => Promise<{
         thresholdAmount: string | number | BN;
@@ -181,15 +177,21 @@ export declare class ExchangeRouter {
         rate: number;
     }>;
     /**
-     * @deprecated use 'getSupportExchangePairs'
+     * @deprecated
+     *
+     * use 'getSupportExchangePairs'
      */
     supportExchangePairs: (fromChain: ChainName) => ExchangePair[];
     /**
-     * @deprecated use 'getWrappedCoinPair'
+     * @deprecated
+     *
+     * use 'getWrappedCoinPair'
      */
     wrappedCoinPair: (onChain: ChainName) => Promise<ExchangePair | undefined>;
     /**
-     * @deprecated use 'getEstimateFee'
+     * @deprecated
+     *
+     * use 'getEstimateFee'
      */
     estimateFee: (props: {
         fromETID: ExchangeTokenID;
@@ -203,7 +205,9 @@ export declare class ExchangeRouter {
         feel3: BN;
     }>;
     /**
-     * @deprecated use 'createExchangeProof'
+     * @deprecated
+     *
+     * use 'createExchangeProof'
      */
     getDepositedProof: (history: ExchangeHistory) => Promise<import("@l3chain/sdk").TransactionProof>;
 }

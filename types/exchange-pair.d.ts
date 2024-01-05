@@ -24,7 +24,9 @@ export declare class ExchangePair {
     get etid(): ExchangeTokenID;
     l3Nonce: () => number;
     /**
-     * @deprecated use 'tokenBalanceReserve'
+     * @deprecated
+     *
+     * use 'tokenBalanceReserve'
      */
     tokenBalnaceReserver: () => Promise<BN>;
     tokenBalanceReserve: () => Promise<BN>;

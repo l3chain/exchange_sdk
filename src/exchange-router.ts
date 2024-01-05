@@ -3,14 +3,13 @@ import BN from 'bn.js';
 
 import { Contract } from 'web3-eth-contract';
 import { toNumber, fromWei, toBN } from 'web3-utils';
-import { provider, HttpProvider, IpcProvider, WebsocketProvider } from 'web3-core';
+import { provider } from 'web3-core';
 import { L3Chain, ChainIdentifier, ChainIdentifiers, ChainName, ChainNames, GraphQlClient, L3Provider } from '@l3chain/sdk';
 
 import { ABI } from './abi';
 import { ExchangePair } from './exchange-pair';
 import { ExchangePairMetadata, ExchangeHistory, CertificateState, NullableAddress, ExchangeTokenID } from "./entity";
 import { ExchangeTransactionBuilder } from './exchange-builder';
-import { ExchangePairsGenerater } from './generater';
 
 type ChainComponent = {
     web3: Web3,
@@ -19,27 +18,12 @@ type ChainComponent = {
     router: Contract,
 }
 
-// export type RouterProvider = { graphDataBaseHost: string } & Record<ChainName, {
-//     provider: string,
-//     graphURL: string,
-//     factoryAddress: string,
-//     routerAddress: string,
-//     l3Address: string
-//     web3Provider?: HttpProvider | IpcProvider | WebsocketProvider
-// }>
-
 export class ExchangeRouter {
     metaDatas: ExchangePairMetadata[];
 
     protected l3: Readonly<L3Chain>;
 
     public _chains: Record<ChainName, ChainComponent>;
-
-    // get contractAddress() {
-    //     return Object.keys(this._chains).reduce((ret, chianName) => {
-    //         ret[chianName] = this._chains[chianName].
-    //     })
-    // }
 
     constructor(l3: Readonly<L3Chain>, props: {
         generatedDatas: ExchangePairMetadata[],
@@ -69,6 +53,22 @@ export class ExchangeRouter {
 
     getComponents = (chainName: ChainName) => {
         return this._chains[chainName];
+    }
+
+    getPair = (chainName: ChainName, tokenContract: string) => {
+        let metaData = this.metaDatas.find(value =>
+            value.etid.chainIdentifier.toLowerCase() == ChainIdentifiers[chainName].toLowerCase() &&
+            value.etid.tokenContract.toLowerCase() === tokenContract.toLowerCase()
+        )
+
+        if (!metaData) {
+            return undefined;
+        }
+
+        return new ExchangePair(
+            this._chains[chainName].web3,
+            metaData
+        )
     }
 
     /**
@@ -154,37 +154,6 @@ export class ExchangeRouter {
         }
 
         return new ExchangePair(this._chains[onChain].web3, wcoinData!)
-    }
-
-    selectBorrowHistory = async (onChain: ChainName, filter: {
-        skip?: number,
-        first: number,
-        where?: { [key: string]: any },
-        orderDirection?: "asc" | "desc"
-        orderBy?: string
-    }): Promise<{ borrower: string, amount: string }[]> => {
-        let gql = `
-        {
-            borrowAmounts(
-                ${!filter.where ? "" : `where:${JSON.stringify(filter.where).replace(/"(\w+)":/g, '$1:')}`}
-                ${!filter.skip ? "skip:0" : `skip: ${filter.skip}`}
-                ${!filter.first ? "" : `first: ${filter.first}`}
-                ${!filter.orderDirection ? "orderDirection:desc" : `orderDirection: ${filter.orderDirection}`}
-                ${!filter.orderBy ? "orderBy:amount" : `orderBy: ${filter.orderBy}`}
-            ) {
-                amount
-                borrower
-            }
-        }
-        `
-        return await this._chains[onChain].client.query<{
-            borrowAmounts: {
-                borrower: string,
-                amount: string,
-            }[]
-        }>(gql).then(data => {
-            return data.borrowAmounts;
-        });
     }
 
     /**
@@ -381,12 +350,13 @@ export class ExchangeRouter {
      * 
      * @param account 
      */
-    selectBorrowAmountsOf = (fromChain: ChainName, filter: {
+    selectBorrowAmounts = (fromChain: ChainName, filter: {
         skip?: number,
-        first: number,
+        first?: number,
         where?: { [key: string]: any },
     }): Promise<{
         amount: BN,
+        borrower: string,
         exchangePair: ExchangePair
     }[]> => {
         let gql = `
@@ -540,37 +510,51 @@ export class ExchangeRouter {
     }
 
     /**
-     * @deprecated use 'getComponents'
+     * @deprecated 
+     * 
+     * use 'getComponents'
      */
     getCompments: typeof this.getComponents = this.getComponents
 
     /**
-     * @deprecated use 'getBaseFee'
+     * @deprecated 
+     * 
+     * use 'getBaseFee'
      */
     fee = this.getBaseFee
 
     /**
-     * @deprecated use 'getFeeAdditionalOf'
+     * @deprecated 
+     * 
+     * use 'getFeeAdditionalOf'
      */
     feeAdditionalOf = this.getFeeAdditionalOf
 
     /**
-     * @deprecated use 'getSupportExchangePairs'
+     * @deprecated 
+     * 
+     * use 'getSupportExchangePairs'
      */
     supportExchangePairs = this.getSupportExchangePairs
 
     /**
-     * @deprecated use 'getWrappedCoinPair'
+     * @deprecated 
+     * 
+     * use 'getWrappedCoinPair'
      */
     wrappedCoinPair = this.getWrappedCoinPair
 
     /**
-     * @deprecated use 'getEstimateFee'
+     * @deprecated 
+     * 
+     * use 'getEstimateFee'
      */
     estimateFee = this.getEstimateFee
 
     /**
-     * @deprecated use 'createExchangeProof'
+     * @deprecated 
+     * 
+     * use 'createExchangeProof'
      */
     getDepositedProof = this.createExchangeProof
 }

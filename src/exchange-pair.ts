@@ -55,7 +55,9 @@ export class ExchangePair {
     l3Nonce = (): number => this.contract.methods.l3Nonce().call().then(toNumber);
 
     /**
-     * @deprecated use 'tokenBalanceReserve'
+     * @deprecated 
+     * 
+     * use 'tokenBalanceReserve'
      */
     tokenBalnaceReserver = (): Promise<BN> => this.contract.methods.tokenBalnaceReserver().call().then(toBN);
 
@@ -110,17 +112,11 @@ export class ExchangePair {
             gas = Math.floor(gas! * (options.gasMutiple ? options.gasMutiple : 1.2))
         }
 
-        return caller.call({
+        return caller.send({
             from: options.from,
             gas: gas ? gas : options.gasLimit,
             gasPrice: options.gasPrice
-        })
-
-        // return caller.send({
-        //     from: options.from,
-        //     gas: gas ? gas : options.gasLimit,
-        //     gasPrice: options.gasPrice
-        // });
+        });
     }
 
     depositBorrowAmount = (amount: BN | string | number, options: ProviderOptions) => new Promise<any>(async (resolve, reject) => {
@@ -132,7 +128,7 @@ export class ExchangePair {
         let web3 = new Web3(options.signerProvider);
         let token = new web3.eth.Contract(ABI.ERC20, this.metaData.etid.tokenContract);
 
-        let allowanced = await (token.methods.allowance(options.from, this.metaData.pairContract).call().catch() as Promise<BN>);
+        let allowanced = await token.methods.allowance(options.from, this.metaData.pairContract).call().then(toBN).catch();
         if (!allowanced) {
             return reject("EPair: request token allowance quota failed");
         }

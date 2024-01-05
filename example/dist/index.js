@@ -52,7 +52,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var web3_1 = __importDefault(require("web3"));
 var sdk_1 = require("@l3chain/sdk");
-var sdk_2 = require("@l3exchange/sdk");
+var exchange_sdk_1 = require("@l3chain/exchange_sdk");
 var config = {
     HOST: {
         provider: "http://l3test.org:18545",
@@ -97,13 +97,12 @@ function fetchMetaDatas() {
         var metaDatas;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, (0, sdk_2.ExchangePairsGenerater)(Object.keys(config).reduce(function (ret, chainName) {
+                case 0: return [4 /*yield*/, (0, exchange_sdk_1.ExchangePairsGenerater)(Object.keys(config).reduce(function (ret, chainName) {
                         ret[chainName] = config[chainName].graphURL;
                         return ret;
                     }, {}))];
                 case 1:
                     metaDatas = _a.sent();
-                    console.log(JSON.stringify(metaDatas));
                     return [2 /*return*/, metaDatas];
             }
         });
@@ -117,7 +116,7 @@ function createExchangeRouter() {
                 case 0: return [4 /*yield*/, fetchMetaDatas()];
                 case 1:
                     metaDatas = _a.sent();
-                    return [2 /*return*/, new sdk_2.ExchangeRouter(l3, {
+                    return [2 /*return*/, new exchange_sdk_1.ExchangeRouter(l3, {
                             generatedDatas: metaDatas,
                             chains: __assign({}, config)
                         })];
@@ -125,6 +124,57 @@ function createExchangeRouter() {
         });
     });
 }
-createExchangeRouter().then(function (router) {
-    // ...
-});
+// createExchangeRouter().then(async router => {
+//     let web3 = router.getComponents("BSC").web3;
+//     let accounts = await web3.eth.getAccounts();
+//     let fromPair = router.getSupportExchangePairs("BSC")[0];
+//     let targetETID = fromPair.toExchangeTokenIds[0];
+//     let builder = await router.createExchangeBuilder('BSC', accounts[0])
+//         .on('feeAdditionalConfig', (fees) => {
+//         })
+//         .on('error', (e) => {
+//         })
+//         .on('feeAmountUpgrade', (fees) => {
+//         })
+//         .setFromETID(fromPair.etid)
+//         .setToETID(targetETID)
+//         .setToAccount(accounts[0])
+//         .setAmount(toWei('100'))
+//     let sender = builder.build(web3.currentProvider)
+//     let tx = await sender
+//         .on('approved', (tx) => {
+//         })
+//         .on('estimateGas', (gas) => {
+//         })
+//         .on('transactionHash', (txHash) => {
+//         })
+//         .on('receipt', (receipt) => {
+//         })
+//         .on('error', (error) => {
+//         })
+//         .send()
+// })
+createExchangeRouter().then(function (router) { return __awaiter(void 0, void 0, void 0, function () {
+    var web3, accounts, badPair, borrowAmount;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                web3 = router.getComponents("ETH").web3;
+                return [4 /*yield*/, web3.eth.getAccounts()];
+            case 1:
+                accounts = _a.sent();
+                badPair = router.getSupportExchangePairs("ETH").find(function (p) { return p.metaData.tokenName === "D6T"; });
+                return [4 /*yield*/, (badPair === null || badPair === void 0 ? void 0 : badPair.depositBorrowAmount(web3.utils.toWei('1', 'gwei'), {
+                        signerProvider: web3.currentProvider,
+                        from: accounts[0]
+                    }))];
+            case 2:
+                _a.sent();
+                return [4 /*yield*/, (badPair === null || badPair === void 0 ? void 0 : badPair.borrowAmountOf(accounts[0]))];
+            case 3:
+                borrowAmount = _a.sent();
+                console.log("BorrowAmount: ".concat(web3.utils.fromWei(borrowAmount, 'gwei')));
+                return [2 /*return*/];
+        }
+    });
+}); });
