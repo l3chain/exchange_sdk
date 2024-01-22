@@ -19,7 +19,7 @@
     "timeout": "50000"
   },
   "dependencies": {
-    "@l3chain/exchange_sdk": "file:../"
+    "@l3chain/exchange_sdk": "file:.."
   },
   "devDependencies": {
     "@types/chai": "^4.2.19",

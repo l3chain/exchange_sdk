@@ -251,11 +251,11 @@ describe("L3Exchange", function () {
      */
     it("getBorrowAmountsOf", async () => {
 
-        let supportPairs = router.supportExchangePairs('HOST');
+        let supportPairs = router.getSupportExchangePairs('HOST');
         let pair = supportPairs[0];
 
         // 查询所有地址在Host网络中的借出信息
-        await router.selectBorrowAmountsOf('HOST', {
+        await router.selectBorrowAmounts('HOST', {
             first: 1,
             where: {
                 borrower: pair.contractAddress
@@ -263,7 +263,7 @@ describe("L3Exchange", function () {
         })
 
         // 查询指定Pair的所有借款信息
-        await router.selectBorrowAmountsOf('HOST', {
+        await router.selectBorrowAmounts('HOST', {
             first: 1,
             where: {
                 pairContract: pair.contractAddress
@@ -271,7 +271,7 @@ describe("L3Exchange", function () {
         })
 
         // 查询指定Account在Pair中的借款信息
-        await router.selectBorrowAmountsOf('HOST', {
+        await router.selectBorrowAmounts('HOST', {
             first: 1,
             where: {
                 pairContract: pair.contractAddress,

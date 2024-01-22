@@ -23,24 +23,49 @@ type ExchangeTransactionPayload = {
 export declare const ExchangeTransactionErrors: {
     INSUFFICIENT_BALANCE: Error;
     INVAILD_PAYLOAD: Error;
+    INSUFFICIENT_BORROW_AMOUNT_BALANCE: Error;
 };
-export declare class ExchangeTransactionSender extends ExchangeTransactionBuilderEmitter<{
+declare abstract class ExchangeTransactionSender extends ExchangeTransactionBuilderEmitter<{
     transactionHash: (hash: string) => void;
     estimateGas: (gas: number) => void;
     error: (e: Error) => void;
     approved: (tx: any) => void;
     receipt: (receipt: any) => void;
 }> {
+    abstract send(): Promise<any>;
+    abstract call(): Promise<any>;
+}
+export declare class ExchangeBorrowTransactionSender extends ExchangeTransactionSender {
+    exchangeCaller: any;
+    exchangeParams: any;
+    loader: any;
+    senderOptions: {
+        gasPrice: BN | number | string | undefined;
+        gasMultiple: number;
+    };
+    constructor(exchangeRouter: ExchangeRouter, signerProvider: provider, payload: ExchangeTransactionPayload, options?: {
+        gasPrice: BN | number | string | undefined;
+        gasMultiple: number;
+    });
+    call(): Promise<any>;
+    send(): Promise<any>;
+}
+export declare class ExchangeBalanceTransactionSender extends ExchangeTransactionSender {
     approveCaller: any;
     approveParams: any;
     exchangeCaller: any;
     exchangeParams: any;
     loader: any;
+    senderOptions: {
+        gasPrice: BN | number | string | undefined;
+        gasMultiple: number;
+    };
     constructor(exchangeRouter: ExchangeRouter, signerProvider: provider, payload: ExchangeTransactionPayload, options?: {
         gasPrice: BN | number | string | undefined;
         gasMultiple: number;
     });
-    send(gasMultiple?: number): Promise<any>;
+    call(): Promise<any>;
+    send(): Promise<any>;
 }
 export declare class ExchangeTransactionBuilder extends ExchangeTransactionBuilderEmitter<{
     error: (e: any) => void;
@@ -60,6 +85,7 @@ export declare class ExchangeTransactionBuilder extends ExchangeTransactionBuild
     private feeL3;
     private readonly router;
     private payload;
+    isUseBorrowAmount: boolean;
     get fromAccount(): string | undefined;
     get toAccount(): string | undefined;
     get fromETID(): ExchangeTokenID | undefined;

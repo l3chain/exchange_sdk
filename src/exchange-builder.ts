@@ -2,14 +2,12 @@ import Web3 from 'web3';
 import BN from 'bn.js';
 
 import { EventEmitter } from "events";
-import { Contract } from 'web3-eth-contract';
-import { toNumber, fromWei, toBN } from 'web3-utils';
+import { toNumber, toBN } from 'web3-utils';
 import { provider } from 'web3-core';
-import { L3Chain, ChainIdentifier, ChainIdentifiers, ChainName, ChainNames, GraphQlClient, L3Provider } from '@l3chain/sdk';
+import { ChainName } from '@l3chain/sdk';
 
 import { ABI } from './abi';
-import { ExchangePair } from './exchange-pair';
-import { ExchangePairMetadata, ExchangeHistory, CertificateState, NullableAddress, ExchangeTokenID } from "./entity";
+import { ExchangeTokenID } from "./entity";
 import { ExchangeRouter } from './exchange-router';
 
 let isEqualETID = (a: ExchangeTokenID, b: ExchangeTokenID) => {
@@ -59,22 +57,31 @@ type ExchangeTransactionPayload = {
 export const ExchangeTransactionErrors = {
     INSUFFICIENT_BALANCE: new Error('ETErrors: INSUFFICIENT_BALANCE'),
     INVAILD_PAYLOAD: new Error('ETErrors: INVAILD_PAYLOAD'),
+    INSUFFICIENT_BORROW_AMOUNT_BALANCE: new Error('ETErrors: INSUFFICIENT_BORROW_AMOUNT_BALANCE'),
 }
 
-export class ExchangeTransactionSender extends ExchangeTransactionBuilderEmitter<{
+abstract class ExchangeTransactionSender extends ExchangeTransactionBuilderEmitter<{
     transactionHash: (hash: string) => void,
     estimateGas: (gas: number) => void,
     error: (e: Error) => void,
     approved: (tx: any) => void,
     receipt: (receipt: any) => void,
 }> {
-    approveCaller: any;
-    approveParams: any;
+    abstract send(): Promise<any>;
+    abstract call(): Promise<any>;
+}
+
+export class ExchangeBorrowTransactionSender extends ExchangeTransactionSender {
 
     exchangeCaller: any;
     exchangeParams: any;
 
     loader: any;
+
+    senderOptions: {
+        gasPrice: BN | number | string | undefined,
+        gasMultiple: number,
+    };
 
     constructor(
         exchangeRouter: ExchangeRouter,
@@ -88,9 +95,128 @@ export class ExchangeTransactionSender extends ExchangeTransactionBuilderEmitter
         super();
 
         let { fromETID, fromAccount, toETID, toAccount, amount } = payload;
+        this.senderOptions = options;
 
         let web3 = new Web3(signerProvider);
-        let compments = exchangeRouter.getCompments(fromETID.chainIdentifier.toChainName());
+        let compments = exchangeRouter.getComponents(fromETID.chainIdentifier.toChainName());
+        if (!compments) {
+            throw new Error("ETSender: InvaildFromChainIdentifier")
+        }
+
+        let factoryAddress = (compments.factory as any)._address;
+        let factory = new web3.eth.Contract(ABI.Factory, factoryAddress);
+
+        this.loader = Promise.all([
+            factory.methods.pairOf(fromETID.tokenContract).call() as Promise<string>,
+            web3.eth.getBalance(fromAccount).then(toBN) as Promise<BN>,
+            exchangeRouter.getEstimateFee(payload)
+        ]).then(async rets => {
+            let [pairAddress, coinBalance, fees] = rets;
+
+            let pair = new web3.eth.Contract(ABI.Pair, pairAddress);
+
+            let borrowAmountBalance = await pair.methods.borrowAmountOf(fromAccount).call().then(toBN);
+
+            console.log(amount.toString())
+
+            if (borrowAmountBalance.lt(amount)) {
+                this.emit("error", ExchangeTransactionErrors.INSUFFICIENT_BORROW_AMOUNT_BALANCE)
+                return;
+            }
+
+            if (coinBalance.lt(fees.feel3.add(fees.feeAmount))) {
+                this.emit("error", ExchangeTransactionErrors.INSUFFICIENT_BALANCE)
+                return;
+            }
+
+            // exchangeToUseBorrowAmount(ExchangeTokenId, address, uint256)
+            this.exchangeCaller = pair.methods.exchangeToUseBorrowAmount(toETID, toAccount, amount);
+            this.exchangeParams = {
+                from: fromAccount,
+                gasPrice: options.gasPrice,
+                value: fees.feel3.add(fees.feeAmount),
+            }
+        })
+    }
+
+    async call(): Promise<any> {
+        await this.loader;
+
+        if (!this.exchangeCaller) {
+            this.emit('error', ExchangeTransactionErrors.INVAILD_PAYLOAD)
+            return Promise.reject(ExchangeTransactionErrors.INVAILD_PAYLOAD);
+        }
+
+        let gas = await this.exchangeCaller.estimateGas(this.exchangeParams);
+        this.emit('estimateGas', toNumber(gas));
+
+        return this.exchangeCaller.call({
+            ...this.exchangeParams,
+            gasPrice: this.senderOptions.gasPrice,
+            gas: Math.floor(toNumber(gas) * this.senderOptions.gasMultiple),
+        })
+    }
+
+    async send(): Promise<any> {
+
+        await this.loader;
+
+        if (!this.exchangeCaller) {
+            this.emit('error', ExchangeTransactionErrors.INVAILD_PAYLOAD)
+            return Promise.reject(ExchangeTransactionErrors.INVAILD_PAYLOAD);
+        }
+
+        let gas = await this.exchangeCaller.estimateGas(this.exchangeParams);
+        this.emit('estimateGas', toNumber(gas));
+
+        return this.exchangeCaller.send({
+            ...this.exchangeParams,
+            gasPrice: this.senderOptions.gasPrice,
+            gas: Math.floor(toNumber(gas) * this.senderOptions.gasMultiple),
+        })
+            .on('transactionHash', (txHash: string) => {
+                this.emit('transactionHash', txHash)
+            })
+            .on('receipt', (receipt: any) => {
+                this.emit('receipt', receipt)
+            })
+            .on('error', (error: any) => {
+                this.emit('error', error)
+            })
+    }
+}
+
+export class ExchangeBalanceTransactionSender extends ExchangeTransactionSender {
+    approveCaller: any;
+    approveParams: any;
+
+    exchangeCaller: any;
+    exchangeParams: any;
+
+    loader: any;
+
+    senderOptions: {
+        gasPrice: BN | number | string | undefined,
+        gasMultiple: number,
+    };
+
+    constructor(
+        exchangeRouter: ExchangeRouter,
+        signerProvider: provider,
+        payload: ExchangeTransactionPayload,
+        options: {
+            gasPrice: BN | number | string | undefined,
+            gasMultiple: number,
+        } = { gasPrice: undefined, gasMultiple: 1.2 }
+    ) {
+        super();
+
+        this.senderOptions = options;
+
+        let { fromETID, fromAccount, toETID, toAccount, amount } = payload;
+
+        let web3 = new Web3(signerProvider);
+        let compments = exchangeRouter.getComponents(fromETID.chainIdentifier.toChainName());
         if (!compments) {
             throw new Error("ETSender: InvaildFromChainIdentifier")
         }
@@ -103,7 +229,7 @@ export class ExchangeTransactionSender extends ExchangeTransactionBuilderEmitter
             web3.eth.getBalance(fromAccount).then(toBN) as Promise<BN>,
             fromToken.methods.balanceOf(fromAccount).call().then(toBN) as Promise<BN>,
             fromToken.methods.allowance(fromAccount, routerAddress).call().then(toBN) as Promise<BN>,
-            exchangeRouter.estimateFee(payload),
+            exchangeRouter.getEstimateFee(payload),
             router.methods.WCOIN().call() as Promise<string>
         ]).then(async rets => {
             let [coinBalance, fromTokenBalance, fromTokenAllowanced, fees, wcoinAddress] = rets;
@@ -133,7 +259,7 @@ export class ExchangeTransactionSender extends ExchangeTransactionBuilderEmitter
             }
 
             this.exchangeCaller = isWCOIN
-                //  coinExchangeToChain((bytes32,address,address,uint8),(bytes32,address,address,uint8),address)
+                // coinExchangeToChain((bytes32,address,address,uint8),(bytes32,address,address,uint8),address)
                 ? router.methods['0x384fb85a'](fromETID, toETID, toAccount)
 
                 // tokenExchangeToChain((bytes32,address,address,uint8),(bytes32,address,address,uint8),address,uint256)
@@ -149,7 +275,25 @@ export class ExchangeTransactionSender extends ExchangeTransactionBuilderEmitter
         })
     }
 
-    async send(gasMultiple: number = 1.2): Promise<any> {
+    async call(): Promise<any> {
+        await this.loader;
+
+        if (!this.exchangeCaller) {
+            this.emit('error', ExchangeTransactionErrors.INVAILD_PAYLOAD)
+            return Promise.reject(ExchangeTransactionErrors.INVAILD_PAYLOAD);
+        }
+
+        let gas = await this.exchangeCaller.estimateGas(this.exchangeParams);
+        this.emit('estimateGas', toNumber(gas));
+
+        return this.exchangeCaller.call({
+            ...this.exchangeParams,
+            gasPrice: this.senderOptions.gasPrice,
+            gas: Math.floor(toNumber(gas) * this.senderOptions.gasMultiple),
+        })
+    }
+
+    async send(): Promise<any> {
 
         await this.loader;
 
@@ -168,7 +312,8 @@ export class ExchangeTransactionSender extends ExchangeTransactionBuilderEmitter
 
         return this.exchangeCaller.send({
             ...this.exchangeParams,
-            gas: Math.floor(toNumber(gas) * gasMultiple),
+            gasPrice: this.senderOptions.gasPrice,
+            gas: Math.floor(toNumber(gas) * this.senderOptions.gasMultiple),
         })
             .on('transactionHash', (txHash: string) => {
                 this.emit('transactionHash', txHash)
@@ -213,6 +358,8 @@ export class ExchangeTransactionBuilder extends ExchangeTransactionBuilderEmitte
 
     private payload: Partial<ExchangeTransactionPayload>
 
+    public isUseBorrowAmount: boolean = false;
+
     get fromAccount() {
         return this.payload.fromAccount;
     }
@@ -240,7 +387,7 @@ export class ExchangeTransactionBuilder extends ExchangeTransactionBuilderEmitte
         super();
 
         let { fromAccount, fromChain } = props;
-        let compments = router.getCompments(fromChain);
+        let compments = router.getComponents(fromChain);
         if (!compments) {
             throw new Error("ETBuilder: InvaildFromChainIdentifier")
         }
@@ -280,9 +427,9 @@ export class ExchangeTransactionBuilder extends ExchangeTransactionBuilderEmitte
         }
 
         this.payload.fromETID = etid;
-        this.feeAdditionalConfig = this.router.feeAdditionalOf(this.payload.fromETID);
-        this.feeExchange = this.router.fee(etid.chainIdentifier.toChainName());
-        this.feeL3 = this.router.estimateFee({
+        this.feeAdditionalConfig = this.router.getFeeAdditionalOf(this.payload.fromETID);
+        this.feeExchange = this.router.getBaseFee(etid.chainIdentifier.toChainName());
+        this.feeL3 = this.router.getEstimateFee({
             fromAccount: this.payload.fromAccount!,
             toAccount: this.payload.fromAccount!,
             fromETID: etid,
@@ -322,7 +469,6 @@ export class ExchangeTransactionBuilder extends ExchangeTransactionBuilderEmitte
             return this;
         }
         this.payload.amount = toBN(amount.toString());
-
         if (!this.feeAdditionalConfig || !this.feeL3 || !this.feeExchange) {
             throw new Error("ETBuilder: befor call \'setAmount\', must be called \"setFromETID\"");
         }
@@ -345,12 +491,18 @@ export class ExchangeTransactionBuilder extends ExchangeTransactionBuilderEmitte
             throw new Error("ETBuilder: invaild payload datas");
         }
 
-        return new ExchangeTransactionSender(
-            this.router,
-            signerProvider,
-            this.payload as ExchangeTransactionPayload,
-            options
-        )
+        return this.isUseBorrowAmount
+            ? new ExchangeBorrowTransactionSender(
+                this.router,
+                signerProvider,
+                this.payload as ExchangeTransactionPayload, options
+            )
+            : new ExchangeBalanceTransactionSender(
+                this.router,
+                signerProvider,
+                this.payload as ExchangeTransactionPayload,
+                options
+            )
     }
 
 }

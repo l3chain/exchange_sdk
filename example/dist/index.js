@@ -124,38 +124,8 @@ function createExchangeRouter() {
         });
     });
 }
-// createExchangeRouter().then(async router => {
-//     let web3 = router.getComponents("BSC").web3;
-//     let accounts = await web3.eth.getAccounts();
-//     let fromPair = router.getSupportExchangePairs("BSC")[0];
-//     let targetETID = fromPair.toExchangeTokenIds[0];
-//     let builder = await router.createExchangeBuilder('BSC', accounts[0])
-//         .on('feeAdditionalConfig', (fees) => {
-//         })
-//         .on('error', (e) => {
-//         })
-//         .on('feeAmountUpgrade', (fees) => {
-//         })
-//         .setFromETID(fromPair.etid)
-//         .setToETID(targetETID)
-//         .setToAccount(accounts[0])
-//         .setAmount(toWei('100'))
-//     let sender = builder.build(web3.currentProvider)
-//     let tx = await sender
-//         .on('approved', (tx) => {
-//         })
-//         .on('estimateGas', (gas) => {
-//         })
-//         .on('transactionHash', (txHash) => {
-//         })
-//         .on('receipt', (receipt) => {
-//         })
-//         .on('error', (error) => {
-//         })
-//         .send()
-// })
 createExchangeRouter().then(function (router) { return __awaiter(void 0, void 0, void 0, function () {
-    var web3, accounts, badPair, borrowAmount;
+    var web3, accounts, fromPair, targetETID, builder;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -163,18 +133,48 @@ createExchangeRouter().then(function (router) { return __awaiter(void 0, void 0,
                 return [4 /*yield*/, web3.eth.getAccounts()];
             case 1:
                 accounts = _a.sent();
-                badPair = router.getSupportExchangePairs("ETH").find(function (p) { return p.metaData.tokenName === "D6T"; });
-                return [4 /*yield*/, (badPair === null || badPair === void 0 ? void 0 : badPair.depositBorrowAmount(web3.utils.toWei('1', 'gwei'), {
-                        signerProvider: web3.currentProvider,
-                        from: accounts[0]
-                    }))];
+                fromPair = router.getSupportExchangePairs("ETH").find(function (pair) { return pair.metaData.tokenSymbol === "D6T"; });
+                targetETID = fromPair.toExchangeTokenIds[0];
+                return [4 /*yield*/, router.createExchangeBuilder('ETH', accounts[0])
+                        .on('feeAdditionalConfig', function (fees) {
+                    })
+                        .on('error', function (e) {
+                    })
+                        .on('feeAmountUpgrade', function (fees) {
+                    })
+                        .setFromETID(fromPair.etid)
+                        .setToETID(targetETID)
+                    // .setToAccount(accounts[0])
+                    // .setAmount(toWei('100'))
+                    // 该设置表示使用欠款就行跨链操作，默认为 false
+                ];
             case 2:
-                _a.sent();
-                return [4 /*yield*/, (badPair === null || badPair === void 0 ? void 0 : badPair.borrowAmountOf(accounts[0]))];
-            case 3:
-                borrowAmount = _a.sent();
-                console.log("BorrowAmount: ".concat(web3.utils.fromWei(borrowAmount, 'gwei')));
+                builder = _a.sent();
+                // .setToAccount(accounts[0])
+                // .setAmount(toWei('100'))
+                // 该设置表示使用欠款就行跨链操作，默认为 false
+                builder.isUseBorrowAmount = true;
                 return [2 /*return*/];
         }
     });
 }); });
+// createExchangeRouter().then(async router => {
+//     let web3 = router.getComponents("ETH").web3;
+//     let accounts = await web3.eth.getAccounts();
+//     for (let pair of router.getSupportExchangePairs("ETH")) {
+//         console.log(pair.metaData.tokenSymbol);
+//     }
+//     let badPair = router.getSupportExchangePairs("ETH").find(p => p.metaData.tokenSymbol === "WCOIN");
+//     let baddepts = await router.selectBadExchange(badPair!);
+//     console.log(baddepts);
+//     // await badPair?.depositBorrowAmount(web3.utils.toWei('1', 'gwei'), {
+//     //     signerProvider: web3.currentProvider,
+//     //     from: accounts[0]
+//     // });
+//     // let borrowAmount = await badPair?.borrowAmountOf(accounts[0]);
+//     // console.log(`BorrowAmount: ${web3.utils.fromWei(borrowAmount!, 'gwei')}`)
+//     // handlePair?.exchangeFromProofsWithAddLiquidity()
+//     // console.log(badExchanges)
+//     // let fromPair = router.getSupportExchangePairs("BSC")[0];
+//     // let targetETID = fromPair.toExchangeTokenIds[0];
+// })
