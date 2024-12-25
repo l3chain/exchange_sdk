@@ -19,7 +19,7 @@
     "timeout": "50000"
   },
   "dependencies": {
-    "@l3chain/sdk": "1.0.6",
+    "@l3chain/sdk": "1.0.7",
     "web3": "1.8.2"
   },
   "devDependencies": {
