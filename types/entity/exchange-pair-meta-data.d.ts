@@ -4,7 +4,7 @@ export interface ExchangePairMetadata {
     etid: ExchangeTokenID;
     pairContract: string;
     tokenAddress: string;
-    tokenDecimals: number | string;
+    tokenDecimals: number;
     tokenName: string;
     tokenSymbol: string;
     fromEtid: ExchangeTokenID[];

@@ -1,3 +1,2 @@
-import { ChainName } from "@l3chain/sdk";
-import { ExchangePairMetadata } from "./entity";
-export declare function ExchangePairsGenerater(graphURL: Record<ChainName, string>): Promise<ExchangePairMetadata[]>;
+import { ExchangePairMetadata, ExchangeProviderGroup } from "./entity";
+export declare function ExchangePairsGenerater(providerGroup: ExchangeProviderGroup): Promise<ExchangePairMetadata[]>;

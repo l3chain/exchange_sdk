@@ -1,14 +1,14 @@
 {
   "name": "@l3chain/exchange_sdk",
-  "version": "1.0.5-pre.7",
+  "version": "1.0.5",
   "main": "./lib/index.js",
   "types": "./types/index.d.ts",
   "license": "MIT",
   "repository": "https://github.com/l3chain/exchange_sdk.git",
   "scripts": {
     "build": "tsc -b tsconfig.json",
-    "test": "cross-env TS_NODE_PROJECT='test/tsconfig.test.json' mocha test/**/**.test.ts",
-    "bug": "cross-env TS_NODE_PROJECT='test/tsconfig.test.json' mocha test/bug.test.ts"
+    "test": "cross-env TS_NODE_PROJECT='test/tsconfig.test.json' mocha",
+    "sdk-test": "cross-env TS_NODE_PROJECT='test/tsconfig.test.json' mocha test/sdk.test.ts"
   },
   "mocha": {
     "require": [
@@ -19,7 +19,7 @@
     "timeout": "50000"
   },
   "dependencies": {
-    "@l3chain/sdk": "1.0.4",
+    "@l3chain/sdk": "1.0.6",
     "web3": "1.8.2"
   },
   "devDependencies": {

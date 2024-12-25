@@ -1,18 +1,4 @@
-import { ChainIdentifier, ChainName, ChainIdentifiers } from '@l3chain/sdk'
-
-declare global {
-    interface String {
-        toChainName(this: ChainIdentifier): ChainName
-    }
-}
-
-String.prototype.toChainName = function (this: ChainIdentifier) {
-    let nameRecord: any = {}
-    nameRecord[ChainIdentifiers.HOST] = "HOST";
-    nameRecord[ChainIdentifiers.ETH] = "ETH";
-    nameRecord[ChainIdentifiers.BSC] = "BSC";
-    return nameRecord[this] as ChainName;
-}
+import { ChainIdentifier } from '@l3chain/sdk'
 
 export type ExchangeTokenID = {
     chainIdentifier: ChainIdentifier,

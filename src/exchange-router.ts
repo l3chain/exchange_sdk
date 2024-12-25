@@ -3,13 +3,18 @@ import BN from 'bn.js';
 
 import { Contract } from 'web3-eth-contract';
 import { toNumber, fromWei, toBN } from 'web3-utils';
-import { provider } from 'web3-core';
-import { L3Chain, ChainIdentifier, ChainIdentifiers, ChainName, ChainNames, GraphQlClient, L3Provider } from '@l3chain/sdk';
+import { L3Chain, ChainIdentifier, ChainName, GraphQlClient, L3ProviderGroup, L3Provider } from '@l3chain/sdk';
 
 import { ABI } from './abi';
 import { ExchangePair } from './exchange-pair';
-import { ExchangePairMetadata, ExchangeHistory, CertificateState, NullableAddress, ExchangeTokenID } from "./entity";
-import { ExchangeTransactionBuilder } from './exchange-builder';
+import {
+    ExchangePairMetadata,
+    ExchangeHistory,
+    CertificateState,
+    NullableAddress,
+    ExchangeTokenID,
+    ExchangeProviderGroup
+} from "./entity";
 
 type ChainComponent = {
     web3: Web3,
@@ -19,27 +24,37 @@ type ChainComponent = {
 }
 
 export class ExchangeRouter {
+    protected l3: Readonly<L3Chain>;
+
     metaDatas: ExchangePairMetadata[];
 
-    protected l3: Readonly<L3Chain>;
+    protected chainIdentifiers: Record<ChainName, ChainIdentifier>;
+    protected chainNames: Record<ChainIdentifier, ChainName>;
 
     public _chains: Record<ChainName, ChainComponent>;
 
-    constructor(l3: Readonly<L3Chain>, props: {
+    constructor(props: {
         generatedDatas: ExchangePairMetadata[],
-        chains: Record<ChainName, {
-            provider: provider,
-            graphURL: string,
-            factoryAddress: string
-            routerAddress: string
-        }>
+        providerGroup: ExchangeProviderGroup
     }) {
-        this.l3 = l3;
-        this.metaDatas = props.generatedDatas;
+        const { generatedDatas, providerGroup } = props;
 
-        this._chains = ChainNames.reduce((ret, key) => {
-            let c = props.chains[key];
-            let web3 = new Web3(c.provider);
+        this.metaDatas = generatedDatas;
+        this.l3 = new L3Chain(providerGroup);
+
+        this.chainIdentifiers = Object.keys(providerGroup.providers).reduce((ret, key) => {
+            ret[key] = providerGroup.providers[key].chainIdentifier.toLowerCase();
+            return ret;
+        }, {} as Record<ChainName, ChainIdentifier>);
+
+        this.chainNames = Object.keys(providerGroup.providers).reduce((ret, key) => {
+            ret[providerGroup.providers[key].chainIdentifier.toLowerCase()] = key;
+            return ret;
+        }, {} as Record<ChainIdentifier, ChainName>);
+
+        this._chains = Object.keys(providerGroup.providers).reduce((ret, key) => {
+            const c = providerGroup.providers[key];
+            const web3 = this.l3.getComponents(key).web3;
             ret[key] = {
                 web3: web3,
                 client: new GraphQlClient(c.graphURL),
@@ -47,7 +62,6 @@ export class ExchangeRouter {
                 router: new web3.eth.Contract(ABI.Router, c.routerAddress),
             }
             return ret;
-
         }, {} as Record<ChainName, ChainComponent>)
     }
 
@@ -56,8 +70,8 @@ export class ExchangeRouter {
     }
 
     getPair = (chainName: ChainName, tokenContract: string) => {
-        let metaData = this.metaDatas.find(value =>
-            value.etid.chainIdentifier.toLowerCase() == ChainIdentifiers[chainName].toLowerCase() &&
+        const metaData = this.metaDatas.find(value =>
+            value.etid.chainIdentifier.toLowerCase() == this.chainIdentifiers[chainName].toLowerCase() &&
             value.etid.tokenContract.toLowerCase() === tokenContract.toLowerCase()
         )
 
@@ -115,7 +129,7 @@ export class ExchangeRouter {
             shadowEmiter: pairOrETID.shadowEmiter
         }
 
-        this._chains[args.chainIdentifier.toChainName()].factory.methods
+        this._chains[this.chainNames[args.chainIdentifier.toLowerCase()]].factory.methods
             .feeAdditionalOf(args.shadowEmiter)
             .call()
             .then((result: any) => resolve({
@@ -132,7 +146,7 @@ export class ExchangeRouter {
      * @returns 
      */
     getSupportExchangePairs = (fromChain: ChainName) => this.metaDatas.filter(
-        data => data.etid.chainIdentifier.toLowerCase() == ChainIdentifiers[fromChain].toLowerCase()
+        data => data.etid.chainIdentifier.toLowerCase() == this.chainIdentifiers[fromChain].toLowerCase()
     ).map(data => new ExchangePair(this._chains[fromChain].web3, data))
 
     /**
@@ -145,7 +159,7 @@ export class ExchangeRouter {
         let wcoinAddress = await this._chains[onChain].router.methods.WCOIN().call();
 
         let wcoinData = this.metaDatas.find(data =>
-            data.etid.chainIdentifier.toLowerCase() == ChainIdentifiers[onChain].toLowerCase() &&
+            data.etid.chainIdentifier.toLowerCase() == this.chainIdentifiers[onChain].toLowerCase() &&
             data.etid.tokenContract.toLowerCase() == wcoinAddress.toLowerCase()
         )
 
@@ -214,33 +228,13 @@ export class ExchangeRouter {
         }
         `
 
-        let exchangeds = await this._chains[fromChain].client.query<{
-            exchangeds: {
-                id: string,
-                certificateId: string,
-                fromAccount: string,
-                toAccount: string,
-                amount: string,
-                fee: string,
-                feeAdditional: string,
-                time: string,
-                fromETID: {
-                    chainIdentifier: ChainIdentifier,
-                    exchangePair: string,
-                },
-                toETID: {
-                    chainIdentifier: ChainIdentifier,
-                    exchangePair: string,
-                }
-                assetProvider: string
-            }[]
-        }>(gql).then(data => {
+        const exchangeds = await this._chains[fromChain].client.query(gql).then(data => {
             return data.exchangeds;
         });
 
-        let emitChainIdentifier = ChainIdentifiers[fromChain];
+        let emitChainIdentifier = this.chainIdentifiers[fromChain];
 
-        return exchangeds!.map(record => {
+        return exchangeds!.map((record: any) => {
             let fromPair = this.metaDatas.find((value) =>
                 value.etid.chainIdentifier.toLowerCase() == record.fromETID.chainIdentifier.toLowerCase() &&
                 value.pairContract.toLowerCase() == record.fromETID.exchangePair.toLowerCase()
@@ -320,7 +314,7 @@ export class ExchangeRouter {
             // history.historyType == "Deposit";
             // 存入类型，需要去目标网络中查看凭证状态，存在凭证则视为成交
             let withdrawHistory = await this.selectExchangeHistory(
-                history.to.chainIdentifier.toChainName(),
+                this.chainNames[history.to.chainIdentifier.toLowerCase()],
                 {
                     first: 1,
                     where: {
@@ -374,27 +368,20 @@ export class ExchangeRouter {
             }
         }
         `;
-        return this._chains[fromChain].client.query<{
-            borrowAmounts: {
-                amount: string,
-                borrower: string,
-                pairContract: {
-                    pairContract: string
+        return this._chains[fromChain].client.query(gql)
+            .then(rsp => rsp.borrowAmounts.map((borrowInfo: any) => {
+                return {
+                    amount: toBN(borrowInfo.amount),
+                    borrower: borrowInfo.borrower,
+                    exchangePair: new ExchangePair(
+                        this._chains[fromChain].web3,
+                        this.metaDatas.find(value =>
+                            value.etid.chainIdentifier.toLowerCase() == this.chainIdentifiers[fromChain].toLowerCase() &&
+                            value.pairContract.toLowerCase() == borrowInfo.pairContract.pairContract.toLowerCase()
+                        )!
+                    )
                 }
-            }[]
-        }>(gql).then(rsp => rsp.borrowAmounts.map(borrowInfo => {
-            return {
-                amount: toBN(borrowInfo.amount),
-                borrower: borrowInfo.borrower,
-                exchangePair: new ExchangePair(
-                    this._chains[fromChain].web3,
-                    this.metaDatas.find(value =>
-                        value.etid.chainIdentifier.toLowerCase() == ChainIdentifiers[fromChain].toLowerCase() &&
-                        value.pairContract.toLowerCase() == borrowInfo.pairContract.pairContract.toLowerCase()
-                    )!
-                )
-            }
-        }))
+            }))
     }
 
     /**
@@ -415,7 +402,7 @@ export class ExchangeRouter {
         let allHistory = await Promise.all(
             fromEtids.map(
                 fromEtid => this.selectExchangeHistory(
-                    fromEtid.chainIdentifier.toChainName(),
+                    this.chainNames[fromEtid.chainIdentifier.toLowerCase()],
                     {
                         ...filter,
                         orderBy: "time",
@@ -435,7 +422,7 @@ export class ExchangeRouter {
                     }
                 ).then((history) => {
                     return this.selectExchangeHistory(
-                        pair.metaData.etid.chainIdentifier.toChainName(),
+                        this.chainNames[pair.metaData.etid.chainIdentifier.toLowerCase()],
                         {
                             first: history.length,
                             where: {
@@ -468,7 +455,7 @@ export class ExchangeRouter {
      * @returns 
      */
     createExchangeProof = (history: ExchangeHistory) => this.l3.createL3TransactionProof(
-        history.from.chainIdentifier.toChainName(),
+        this.chainNames[history.from.chainIdentifier.toLowerCase()],
         history.id.split('-')[0],
         parseInt(history.id.split('-')[1] as string) - 1
     );
@@ -484,7 +471,7 @@ export class ExchangeRouter {
     ) => {
         let { fromETID, toETID, fromAccount, toAccount, amount } = props;
 
-        return this._chains[fromETID.chainIdentifier.toChainName()].router.methods.tokenExchangeToChainEstimateFee(
+        return this._chains[this.chainNames[fromETID.chainIdentifier.toLowerCase()]].router.methods.tokenExchangeToChainEstimateFee(
             fromETID,
             toETID,
             toAccount,
@@ -500,13 +487,6 @@ export class ExchangeRouter {
             feeAdditionalAmount: BN,
             feel3: BN
         }>
-    }
-
-    createExchangeBuilder = (fromChain: ChainName, fromAccount: string) => {
-        return new ExchangeTransactionBuilder(this, {
-            fromChain,
-            fromAccount
-        });
     }
 
     /**

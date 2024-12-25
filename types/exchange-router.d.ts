@@ -1,11 +1,9 @@
 import Web3 from 'web3';
 import BN from 'bn.js';
 import { Contract } from 'web3-eth-contract';
-import { provider } from 'web3-core';
-import { L3Chain, ChainName, GraphQlClient } from '@l3chain/sdk';
+import { L3Chain, ChainIdentifier, ChainName, GraphQlClient } from '@l3chain/sdk';
 import { ExchangePair } from './exchange-pair';
-import { ExchangePairMetadata, ExchangeHistory, CertificateState, ExchangeTokenID } from "./entity";
-import { ExchangeTransactionBuilder } from './exchange-builder';
+import { ExchangePairMetadata, ExchangeHistory, CertificateState, ExchangeTokenID, ExchangeProviderGroup } from "./entity";
 type ChainComponent = {
     web3: Web3;
     client: GraphQlClient;
@@ -13,17 +11,14 @@ type ChainComponent = {
     router: Contract;
 };
 export declare class ExchangeRouter {
-    metaDatas: ExchangePairMetadata[];
     protected l3: Readonly<L3Chain>;
+    metaDatas: ExchangePairMetadata[];
+    protected chainIdentifiers: Record<ChainName, ChainIdentifier>;
+    protected chainNames: Record<ChainIdentifier, ChainName>;
     _chains: Record<ChainName, ChainComponent>;
-    constructor(l3: Readonly<L3Chain>, props: {
+    constructor(props: {
         generatedDatas: ExchangePairMetadata[];
-        chains: Record<ChainName, {
-            provider: provider;
-            graphURL: string;
-            factoryAddress: string;
-            routerAddress: string;
-        }>;
+        providerGroup: ExchangeProviderGroup;
     });
     getComponents: (chainName: ChainName) => ChainComponent;
     getPair: (chainName: ChainName, tokenContract: string) => ExchangePair | undefined;
@@ -150,7 +145,6 @@ export declare class ExchangeRouter {
         feeAdditionalAmount: BN;
         feel3: BN;
     }>;
-    createExchangeBuilder: (fromChain: ChainName, fromAccount: string) => ExchangeTransactionBuilder;
     /**
      * @deprecated
      *

@@ -1,9 +1,4 @@
-import { ChainIdentifier, ChainName } from '@l3chain/sdk';
-declare global {
-    interface String {
-        toChainName(this: ChainIdentifier): ChainName;
-    }
-}
+import { ChainIdentifier } from '@l3chain/sdk';
 export type ExchangeTokenID = {
     chainIdentifier: ChainIdentifier;
     shadowEmiter: string;
